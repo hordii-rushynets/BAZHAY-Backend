@@ -1,6 +1,7 @@
 import random
 import string
 from django.core.cache import cache
+from .tasks import send_email
 
 
 def generate_confirmation_code(length=6):
@@ -9,7 +10,9 @@ def generate_confirmation_code(length=6):
 
 def save_confirmation_code(email):
     confirmation_code = generate_confirmation_code()
-    cache_key = f"registration_code_{email}"
+    cache_key = f"code_{email}"
     cache.set(cache_key, confirmation_code, timeout=3600)
+
+    #send_email(email, confirmation_code)
 
     print(f'\n\n{confirmation_code}\n\n')

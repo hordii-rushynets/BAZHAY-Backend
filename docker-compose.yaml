@@ -18,8 +18,7 @@ services:
       - ./docker/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   web:
-    image: bazhay_web
-    container_name: bazhay
+    image: hordiirushynets/tep-core:latest
     build: .
     command:
       bash -c "
@@ -45,8 +44,7 @@ services:
       - .env
 
   celery:
-    image: bazhay_web
-    container_name: bazhay
+    image: hordiirushynets/tep-core:latest
     depends_on:
       - db
       - redis
@@ -59,6 +57,19 @@ services:
               sleep 3 &&
               celery -A backend worker -E -B -ldebug
               "
+
+  redis:
+    image: redis
+    volumes:
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./docker/redis/redis_data:/data
+    expose:
+      - "6379"
+    ports:
+      - "6379:6379"
+    env_file:
+      - .env
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass "${REDIS_PASSWORD}"
 
 volumes:
   postgres_data:

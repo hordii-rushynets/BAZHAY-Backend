@@ -3,6 +3,13 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
+SEX_CHOICES = [
+    ('M', 'Male'),
+    ('F', 'Female'),
+    ('O', 'Other'),
+]
+
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, username=None, **extra_fields):
         if not email:
@@ -29,6 +36,10 @@ class CustomUserManager(BaseUserManager):
 class BazhayUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_('email address'), unique=True)
     username = models.CharField(_('username'), max_length=150, unique=True, blank=True, null=True)
+    birthday = models.DateField(blank=True, null=True)
+    sex = models.CharField(max_length=50, choices=SEX_CHOICES, blank=True, null=True)
+    photo = models.ImageField(upload_to='user_photos/', blank=True, null=True)
+    is_already_registered = models.BooleanField(default=False)
 
     objects = CustomUserManager()
 
@@ -37,4 +48,3 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
-

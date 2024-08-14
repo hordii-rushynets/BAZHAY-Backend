@@ -11,10 +11,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-
 from datetime import timedelta
-
 import os
+from enum import IntEnum
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -87,6 +86,55 @@ DATABASES = {
     }
 }
 
+'''DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'bazhay'),
+        'USER': os.getenv('POSTGRES_USER', 'bazhay'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'qwerty123'),
+        'HOST': os.getenv('POSTGRES_HOST', 'db'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+    }
+}'''
+
+
+class RedisDatabases(IntEnum):
+    DEFAULT: int = 0
+    CELERY: int = 1
+    CELERY_RESULTS: int = 2
+    LOGIN_CODE: int = 3
+    IP_CONTROL: int = 4
+    LOCK: int = 5
+
+
+REDIS_HOST = os.environ.get('REDIS_HOST', 'redis')
+REDIS_PORT = os.environ.get('REDIS_PORT', 6379)
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD') or None
+REDIS_USE_SSL = os.environ.get('REDIS_USE_SSL', '').upper() in ('TRUE', '1', 'Y', 'YES', 'T')
+
+REDIS_PROTOCOL = 'rediss' if REDIS_USE_SSL else 'redis'
+REDIS_AUTH = f'default:{REDIS_PASSWORD}@' if REDIS_PASSWORD else ''
+
+REDIS_CONNECTION = {
+    'host': REDIS_HOST,
+    'port': REDIS_PORT,
+    'password': REDIS_PASSWORD,
+}
+
+REDIS_CONNECTION_QUERY = '?ssl_cert_reqs=none' if REDIS_USE_SSL else ''
+REDIS_CONNECTION_STRING = '{protocol}://{auth}{host}:{port}/%s{query}'.format(
+    protocol=REDIS_PROTOCOL,
+    auth=REDIS_AUTH,
+    **REDIS_CONNECTION,
+    query=REDIS_CONNECTION_QUERY,
+)
+
+CELERY_TIMEZONE = "Europe/Kiev"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_BROKER_URL = REDIS_CONNECTION_STRING % int(RedisDatabases.CELERY)
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -123,6 +171,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
