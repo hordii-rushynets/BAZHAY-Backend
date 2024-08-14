@@ -1,0 +1,64 @@
+version: '3'
+services:
+  db:
+    image: postgres:12
+    environment:
+      - POSTGRES_DB={POSTGRES_DB}
+      - POSTGRES_USER={POSTGRES_USER}
+      - POSTGRES_PASSWORD={POSTGRES_PASSWORD}
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    expose:
+      - 5432
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      - ./docker/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  web:
+    image: bazhay_web
+    container_name: bazhay
+    build: .
+    command:
+      bash -c "
+      sleep 1
+      && python manage.py makemigrations
+      && python manage.py migrate
+      && python manage.py collectstatic --noinput
+      && python manage.py runserver 0.0.0.0:8000"
+      # && gunicorn --bind 0.0.0.0:8000 tep.wsgi:application"
+    volumes:
+      - .:/app
+      - ./static:/var/static
+      - ./uploads:/var/uploads
+    ports:
+      - "8000:8000"
+      - "5678:5678"
+    depends_on:
+      - redis
+      - db
+    links:
+      - redis:redis
+    env_file:
+      - .env
+
+  celery:
+    image: bazhay_web
+    container_name: bazhay
+    depends_on:
+      - db
+      - redis
+    env_file:
+       - .env
+    volumes:
+      - .:/app
+    command: >
+      bash -c "
+              sleep 3 &&
+              celery -A backend worker -E -B -ldebug
+              "
+
+volumes:
+  postgres_data:
