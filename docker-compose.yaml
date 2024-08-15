@@ -18,7 +18,6 @@ services:
       - ./docker/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   web:
-    image: hordiirushynets/tep-core:latest
     build: .
     command:
       bash -c "
@@ -44,7 +43,7 @@ services:
       - .env
 
   celery:
-    image: hordiirushynets/tep-core:latest
+    build: .
     depends_on:
       - db
       - redis
