@@ -39,7 +39,10 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
     birthday = models.DateField(blank=True, null=True)
     sex = models.CharField(max_length=50, choices=SEX_CHOICES, blank=True, null=True)
     photo = models.ImageField(upload_to='user_photos/', blank=True, null=True)
+    about_user = models.TextField(default=None, blank=True, null=True)
     is_already_registered = models.BooleanField(default=False)
+    first_name = models.CharField(max_length=128, default=None, blank=True, null=True)
+    last_name = models.CharField(max_length=128, default=None, blank=True, null=True)
 
     objects = CustomUserManager()
 

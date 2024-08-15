@@ -3,7 +3,10 @@ from .models import BazhayUser
 
 
 class UpdateUserSerializers(serializers.ModelSerializer):
+    email = serializers.EmailField(read_only=True)
+
     class Meta:
         model = BazhayUser
-        fields = ['username', 'birthday', 'sex', 'photo']
+        fields = ['photo', 'email', 'first_name', 'last_name', 'username',
+                  'birthday', 'about_user', 'sex']
 
