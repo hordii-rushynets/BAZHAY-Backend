@@ -1,6 +1,7 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import (AbstractBaseUser, BaseUserManager, PermissionsMixin)
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
 
 SEX_CHOICES = [
@@ -10,7 +11,7 @@ SEX_CHOICES = [
 ]
 
 
-class CustomUserManager(BaseUserManager):
+class BazhayUserManager(BaseUserManager):
     def create_user(self, email, password=None, username=None, **extra_fields):
         if not email:
             raise ValueError(_('The Email field must be set'))
@@ -21,16 +22,15 @@ class CustomUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, username=None, **extra_fields):
+    def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError(_('Superuser must have is_staff=True.'))
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError(_('Superuser must have is_superuser=True.'))
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('username', email)
 
-        return self.create_user(email, password=password, username=username, **extra_fields)
+        return self.create_user(email, password, **extra_fields)
 
 
 class BazhayUser(AbstractBaseUser, PermissionsMixin):
@@ -44,7 +44,11 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=128, default=None, blank=True, null=True)
     last_name = models.CharField(max_length=128, default=None, blank=True, null=True)
 
-    objects = CustomUserManager()
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=True)
+    date_joined = models.DateTimeField(default=timezone.now, blank=True, null=True)
+
+    objects = BazhayUserManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

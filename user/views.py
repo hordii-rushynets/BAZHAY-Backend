@@ -1,59 +1,45 @@
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.cache import cache
-from .models import BazhayUser
-from .utils import save_confirmation_code
-from .serializers import UpdateUserSerializers
+from rest_framework import viewsets, status, mixins
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .models import BazhayUser
+from .serializers import (CreateUserSerializer,
+                          ConfirmCodeSerializer,
+                          UpdateUserSerializers,
+                          EmailUpdateSerializer,
+                          EmailConfirmSerializer)
+from .utils import save_and_send_confirmation_code
 
 
 class AuthViewSet(viewsets.ViewSet):
     def create(self, request):
-        email = request.data.get('email')
-
-        if not email:
-            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        user, created = BazhayUser.objects.get_or_create(email=email)
-
-        save_confirmation_code(email)
-
-        user.is_already_registered = not created
-
-        user.save()
-
-        return Response(status=status.HTTP_200_OK)
+        serializer = CreateUserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            save_and_send_confirmation_code(serializer.validated_data['email'])
+            return Response(status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['post'], url_path='confirm')
     def confirm_code(self, request):
-        email = request.data.get('email')
-        confirmation_code = request.data.get('code')
+        serializer = ConfirmCodeSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            cache.delete(f"code_{user.email}")
 
-        if not email or not confirmation_code:
-            return Response({'error': 'Email and confirmation code are required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        cached_code = cache.get(f"code_{email}")
-        if cached_code != confirmation_code:
-            return Response({'error': 'Invalid confirmation code'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = BazhayUser.objects.get(email=email)
-        except BazhayUser.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        cache.delete(f"code_{email}")
-
-        refresh = RefreshToken.for_user(user)
-        data = {'is_already_registered': user.is_already_registered,
+            refresh = RefreshToken.for_user(user)
+            data = {
+                'is_already_registered': user.is_already_registered,
                 'refresh': str(refresh),
-                'access': str(refresh.access_token),}
+                'access': str(refresh.access_token),
+            }
+            status_code = status.HTTP_200_OK if user.is_already_registered else status.HTTP_201_CREATED
+            return Response(data, status=status_code)
 
-        if user.is_already_registered:
-            return Response(data, status=status.HTTP_200_OK)
-        elif not user.is_already_registered:
-            return Response(data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UpdateUserViewSet(viewsets.GenericViewSet, viewsets.mixins.UpdateModelMixin, viewsets.mixins.RetrieveModelMixin):
@@ -63,3 +49,30 @@ class UpdateUserViewSet(viewsets.GenericViewSet, viewsets.mixins.UpdateModelMixi
 
     def get_object(self):
         return self.queryset.filter(id=self.request.user.id).first()
+
+
+class UpdateUserEmailViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request):
+        serializer = EmailUpdateSerializer(data=request.data)
+        user = request.user
+
+        if serializer.is_valid():
+            new_email = serializer.validated_data['email']
+            cache.set(f"pending_email_change_{user.id}", new_email, timeout=3600)
+            save_and_send_confirmation_code(new_email)
+            return Response(status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], url_path='confirm')
+    def confirm_code(self, request):
+        user = request.user
+        serializer = EmailConfirmSerializer(data=request.data, user=user)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
