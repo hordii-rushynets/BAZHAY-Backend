@@ -11,7 +11,8 @@ class CreateUserSerializer(serializers.Serializer):
     def create(self, validated_data):
         email = validated_data.get('email')
         user, created = BazhayUser.objects.get_or_create(email=email)
-        user.is_already_registered = not created
+        if created:
+            user.is_already_registered = False
         user.save()
         return user
 
@@ -100,6 +101,5 @@ class ConvertGuestUserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.email = validated_data.get('email', instance.email)
         instance.is_guest = False
-        instance.is_already_registered = False
         instance.save()
         return instance

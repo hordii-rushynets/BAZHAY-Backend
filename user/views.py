@@ -52,12 +52,15 @@ class AuthViewSet(viewsets.ViewSet):
             cache.delete(f"code_{user.email}")
 
             refresh = RefreshToken.for_user(user)
+            is_already_registered = user.is_already_registered
             data = {
-                'is_already_registered': user.is_already_registered,
+                'is_already_registered': is_already_registered,
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             }
-            status_code = status.HTTP_200_OK if user.is_already_registered else status.HTTP_201_CREATED
+            status_code = status.HTTP_200_OK if is_already_registered else status.HTTP_201_CREATED
+            user.is_already_registered = True
+            user.save()
             return Response(data, status=status_code)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

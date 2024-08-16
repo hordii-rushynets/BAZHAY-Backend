@@ -14,6 +14,6 @@ def save_and_send_confirmation_code(email):
     cache_key = f"code_{email}"
     cache.set(cache_key, confirmation_code, timeout=3600)
 
-    #send_email(email, confirmation_code)
+    send_email.delay(email, confirmation_code)
 
     print(f'\n\n{confirmation_code}\n\n')
