@@ -1,5 +1,6 @@
 from django.core.cache import cache
 from rest_framework import serializers
+import uuid
 
 from .models import BazhayUser
 
@@ -38,11 +39,12 @@ class ConfirmCodeSerializer(serializers.Serializer):
 
 class UpdateUserSerializers(serializers.ModelSerializer):
     email = serializers.EmailField(read_only=True)
+    is_guest = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = BazhayUser
         fields = ['photo', 'email', 'first_name', 'last_name', 'username',
-                  'birthday', 'about_user', 'sex']
+                  'birthday', 'about_user', 'sex', 'is_guest']
 
 
 class EmailUpdateSerializer(serializers.Serializer):
@@ -79,3 +81,25 @@ class EmailConfirmSerializer(serializers.Serializer):
 
         cache.delete(f"pending_email_change_{self.user.id}")
         cache.delete(f"code_{new_email}")
+
+
+class GuestUserSerializer(serializers.Serializer):
+    def create(self, validated_data):
+        guest_email = f"guest_{uuid.uuid4().hex}@example.com"
+        user = BazhayUser.objects.create(is_guest=True, email=guest_email)
+        user.is_already_registered = False
+        user.save()
+        return user
+
+
+class ConvertGuestUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BazhayUser
+        fields = ['email']
+
+    def update(self, instance, validated_data):
+        instance.email = validated_data.get('email', instance.email)
+        instance.is_guest = False
+        instance.is_already_registered = False
+        instance.save()
+        return instance

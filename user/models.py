@@ -43,6 +43,7 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
     is_already_registered = models.BooleanField(default=False)
     first_name = models.CharField(max_length=128, default=None, blank=True, null=True)
     last_name = models.CharField(max_length=128, default=None, blank=True, null=True)
+    is_guest = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=True)
