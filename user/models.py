@@ -37,6 +37,7 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_('email address'), unique=True)
     username = models.CharField(_('username'), max_length=150, unique=True, blank=True, null=True)
     birthday = models.DateField(blank=True, null=True)
+    view_birthday = models.BooleanField(default=True, blank=True, null=True)
     sex = models.CharField(max_length=50, choices=SEX_CHOICES, blank=True, null=True)
     photo = models.ImageField(upload_to='user_photos/', blank=True, null=True)
     about_user = models.TextField(default=None, blank=True, null=True)
