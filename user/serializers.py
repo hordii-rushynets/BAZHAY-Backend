@@ -85,11 +85,14 @@ class EmailConfirmSerializer(serializers.Serializer):
 
 
 class GuestUserSerializer(serializers.Serializer):
+    imei = serializers.CharField(max_length=15)
+
     def create(self, validated_data):
-        guest_email = f"guest_{uuid.uuid4().hex}@example.com"
-        user = BazhayUser.objects.create(is_guest=True, email=guest_email)
-        user.is_already_registered = False
-        user.save()
+        imei = validated_data.get('imei')
+        user, create = BazhayUser.objects.get_or_create(is_guest=True, imei=imei)
+        if create:
+            user.is_already_registered = False
+            user.save()
         return user
 
 
