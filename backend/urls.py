@@ -24,7 +24,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/account/', include('user.urls')),
     path('api/brand/', include('brand.urls')),
-    path('api/subscription/', include('subscription.urls'))
+    path('api/subscription/', include('subscription.urls')),
+    path('api/ability/', include('ability.urls')),
+
 ]
 
 if settings.DEBUG:
