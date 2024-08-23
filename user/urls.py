@@ -6,7 +6,8 @@ from rest_framework_simplejwt.views import TokenBlacklistView, TokenRefreshView
 from .views import (AuthViewSet,
                     UpdateUserViewSet,
                     UpdateUserEmailViewSet,
-                    GuestUserViewSet)
+                    GuestUserViewSet,
+                    UpdateUserPhotoViewSet)
 
 
 router = DefaultRouter()
@@ -18,4 +19,6 @@ urlpatterns = router.urls + [
     path('user/', UpdateUserViewSet.as_view({'get': 'retrieve', 'put': 'update'})),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', TokenBlacklistView.as_view(), name='logout'),
+    path('user/photo/', UpdateUserPhotoViewSet.as_view({'put': 'update'})),
+
 ]
