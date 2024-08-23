@@ -1,6 +1,8 @@
 from rest_framework import generics
 from .serializers import SubscriptionSerializer, Subscription
 from permission.permissions import IsRegisteredUser
+from rest_framework.response import Response
+from rest_framework import status
 
 
 class SubscribeView(generics.CreateAPIView):
@@ -41,3 +43,14 @@ class SubscriberListView(generics.ListAPIView):
             "subscribers": response.data
         }
         return response
+
+
+class UnsubscribeView(generics.GenericAPIView):
+    serializer_class = SubscriptionSerializer
+    permission_classes = [IsRegisteredUser]
+
+    def delete(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -37,3 +37,14 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"detail": "You are already subscribed to this user."})
 
         return subscription
+
+    def delete(self):
+        user = self.context['request'].user
+        subscribed_to = self.validated_data['subscribed_to']
+        subscription = Subscription.objects.filter(user=user, subscribed_to=subscribed_to).first()
+
+        if not subscription:
+            raise serializers.ValidationError({"detail": "You are not subscribed to this user."})
+
+        subscription.delete()
+        return subscription
