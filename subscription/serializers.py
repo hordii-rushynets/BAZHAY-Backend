@@ -20,10 +20,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         try:
             subscribed_to_user = BazhayUser.objects.get(email=subscribed_to_email)
         except BazhayUser.DoesNotExist:
-            raise serializers.ValidationError({"detail": "Користувач не знайдений."})
+            raise serializers.ValidationError({"detail": "User not found."})
 
         if subscribed_to_user == request_user:
-            raise serializers.ValidationError({"detail": "Ви не можете підписатися на себе."})
+            raise serializers.ValidationError({"detail": "You cannot subscribe to yourself."})
 
         data['subscribed_to'] = subscribed_to_user
         return data
@@ -34,6 +34,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         subscription, created = Subscription.objects.get_or_create(user=user, subscribed_to=subscribed_to)
 
         if not created:
-            raise serializers.ValidationError({"detail": "Ви вже підписані на цього користувача."})
+            raise serializers.ValidationError({"detail": "You are already subscribed to this user."})
 
         return subscription
