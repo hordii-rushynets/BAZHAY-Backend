@@ -10,4 +10,4 @@ class BrandSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Brand
-        fields = ['photo', 'name_uk', 'name_en', 'description_uk', 'description_en', 'abilities']
+        fields = ['nickname', 'photo', 'name_uk', 'name_en', 'description_uk', 'description_en', 'abilities']

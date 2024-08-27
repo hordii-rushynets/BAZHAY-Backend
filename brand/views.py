@@ -7,5 +7,5 @@ class BrandViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
-    lookup_field = 'name'
+    lookup_field = 'nickname'
 
