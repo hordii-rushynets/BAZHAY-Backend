@@ -13,20 +13,11 @@ def validate_media(value):
         raise ValidationError('Only images and videos are allowed.')
 
 
-class AccessGroup(models.Model):
-    name = models.CharField(max_length=128)
-    members = models.ManyToManyField(BazhayUser, related_name='access_groups')
-
-    def __str__(self):
-        return self.name
-
-
 class Ability(models.Model):
     ACCESS_TYPE_CHOICES = [
         ('subscribers', 'Subscribers'),
         ('everyone', 'Everyone'),
         ('only_me', 'Only_me'),
-        ('chosen_ones', 'ChosenOnes')
     ]
 
     name = models.CharField(max_length=128)
@@ -35,9 +26,8 @@ class Ability(models.Model):
     link = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     additional_description = models.TextField(blank=True, null=True)
-    access_type = models.CharField(max_length=20, choices=ACCESS_TYPE_CHOICES)
+    access_type = models.CharField(max_length=20, choices=ACCESS_TYPE_CHOICES, default='everyone')
     author = models.ForeignKey(BazhayUser, related_name='abilities', on_delete=models.CASCADE)
-    chosen_groups = models.ManyToManyField(AccessGroup, related_name='abilities', blank=True, null=True)
 
     def __str__(self):
         return self.name

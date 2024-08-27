@@ -7,18 +7,18 @@ from user.models import BazhayUser
 class SubscriptionSerializer(serializers.ModelSerializer):
     user = UpdateUserSerializers(read_only=True)
     subscribed_to = UpdateUserSerializers(read_only=True)
-    subscribed_to_email = serializers.EmailField(write_only=True)
+    subscribed_to_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = Subscription
-        fields = ['user', 'subscribed_to', 'subscribed_to_email', 'created_at']
+        fields = ['user', 'subscribed_to', 'subscribed_to_id', 'created_at']
 
     def validate(self, data):
-        subscribed_to_email = data.get('subscribed_to_email')
+        subscribed_to_id = data.get('subscribed_to_id')
         request_user = self.context['request'].user
 
         try:
-            subscribed_to_user = BazhayUser.objects.get(email=subscribed_to_email)
+            subscribed_to_user = BazhayUser.objects.get(id=subscribed_to_id)
         except BazhayUser.DoesNotExist:
             raise serializers.ValidationError({"detail": "User not found."})
 

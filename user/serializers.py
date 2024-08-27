@@ -44,7 +44,7 @@ class UpdateUserSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = BazhayUser
-        fields = ['photo', 'email', 'first_name', 'last_name', 'username',
+        fields = ['id', 'photo', 'email', 'first_name', 'last_name', 'username',
                   'birthday', 'view_birthday', 'about_user', 'sex', 'is_guest']
 
 
