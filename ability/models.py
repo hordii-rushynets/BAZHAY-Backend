@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
-import choices
+import ability.choices as choices
 
 from user.models import BazhayUser
 
