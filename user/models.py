@@ -46,7 +46,7 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=128, default=None, blank=True, null=True)
 
     is_guest = models.BooleanField(default=False)
-    imei = models.CharField(max_length=15, unique=True, blank=True, null=True)
+    imei = models.CharField(max_length=100, unique=True, blank=True, null=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=True)
