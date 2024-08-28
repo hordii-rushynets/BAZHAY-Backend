@@ -5,6 +5,7 @@ from rest_framework.exceptions import PermissionDenied, NotFound
 from django.db.models import Q
 from .models import Ability
 from .serializers import AbilitySerializer
+from .pagination import AbilityPagination
 
 from user.models import BazhayUser
 
@@ -32,6 +33,7 @@ def can_view_ability(user, ability):
 class AbilityViewSet(viewsets.ModelViewSet):
     serializer_class = AbilitySerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = AbilityPagination  # Додаємо пагінацію
 
     def get_queryset(self):
         user = self.request.user

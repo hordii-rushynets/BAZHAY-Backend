@@ -1,8 +1,10 @@
 from django.db import models
+
 from ability.models import Ability
+from common.models import Slug
 
 
-class Brand(models.Model):
+class Brand(Slug):
     name = models.CharField(max_length=128)
     nickname = models.CharField(max_length=128, unique=True, null=True, blank=True)
     description = models.TextField()

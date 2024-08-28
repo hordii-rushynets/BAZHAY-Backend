@@ -26,7 +26,6 @@ urlpatterns = [
     path('api/brand/', include('brand.urls')),
     path('api/subscription/', include('subscription.urls')),
     path('api/ability/', include('ability.urls')),
-
 ]
 
 if settings.DEBUG:

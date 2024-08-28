@@ -72,3 +72,7 @@ pytest-debug.log
 
 # apps migrations
 user/migrations
+subscription/migrations
+common/migrations
+brand/migrations
+ability/migrations
