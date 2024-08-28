@@ -2,7 +2,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Brand, Ability
+from .models import Brand, Wish
 from .serializers import BrandSerializer
 from django.contrib.auth import get_user_model
 
@@ -13,6 +13,7 @@ def create_jwt_token(user):
     refresh = RefreshToken.for_user(user)
     return str(refresh.access_token)
 
+
 class BrandViewSetTests(APITestCase):
 
     @classmethod
@@ -22,12 +23,12 @@ class BrandViewSetTests(APITestCase):
         cls.user2 = User.objects.create_user(email='test_user2@example.com')
 
         # Create abilities
-        cls.ability1 = Ability.objects.create(
+        cls.ability1 = Wish.objects.create(
             name='Ability1',
             author=cls.user2,
             access_type='everyone'
         )
-        cls.ability2 = Ability.objects.create(
+        cls.ability2 = Wish.objects.create(
             name='Ability2',
             author=cls.user2,
             access_type='everyone'

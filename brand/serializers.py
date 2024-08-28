@@ -2,8 +2,6 @@ from rest_framework import serializers
 
 from .models import Brand
 
-from ability.serializers import AbilitySerializer
-
 
 class BrandSerializer(serializers.ModelSerializer):
     class Meta:

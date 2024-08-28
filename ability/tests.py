@@ -2,7 +2,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from .models import Ability
+from .models import Wish
 from subscription.models import Subscription
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -15,14 +15,14 @@ def create_jwt_token(user):
     return str(refresh.access_token)
 
 
-class AbilityTests(APITestCase):
+class WishTests(APITestCase):
     def setUp(self):
         self.user1 = User.objects.create_user(email='test_user1@example.com')
         self.user2 = User.objects.create_user(email='test_user2@example.com')
 
         Subscription.objects.create(user=self.user1, subscribed_to=self.user2)
 
-        self.ability = Ability.objects.create(
+        self.ability = Wish.objects.create(
             name='Test Ability',
             author=self.user2,
             access_type='everyone'
@@ -40,8 +40,8 @@ class AbilityTests(APITestCase):
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Ability.objects.count(), 2)
-        self.assertEqual(Ability.objects.get(pk=response.data['id']).author, self.user1)
+        self.assertEqual(Wish.objects.count(), 2)
+        self.assertEqual(Wish.objects.get(pk=response.data['id']).author, self.user1)
 
     def test_retrieve_ability(self):
         url = reverse('abilities-detail', kwargs={'pk': self.ability.pk})

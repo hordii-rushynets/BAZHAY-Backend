@@ -25,7 +25,7 @@ urlpatterns = [
     path('api/account/', include('user.urls')),
     path('api/brand/', include('brand.urls')),
     path('api/subscription/', include('subscription.urls')),
-    path('api/ability/', include('ability.urls')),
+    path('api/wish/', include('ability.urls')),
 ]
 
 if settings.DEBUG:

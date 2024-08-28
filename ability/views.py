@@ -3,9 +3,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, NotFound
 from django.db.models import Q
-from .models import Ability
-from .serializers import AbilitySerializer
-from .pagination import AbilityPagination
+from .models import Wish
+from .serializers import WishSerializer
 
 from user.models import BazhayUser
 
@@ -13,7 +12,7 @@ from subscription.models import Subscription
 
 
 def get_visible_abilities(user):
-    return Ability.objects.filter(
+    return Wish.objects.filter(
         Q(access_type='everyone') |
         Q(author=user) |
         Q(access_type='subscribers', author__subscriptions__user=user)
@@ -30,14 +29,14 @@ def can_view_ability(user, ability):
     return False
 
 
-class AbilityViewSet(viewsets.ModelViewSet):
-    serializer_class = AbilitySerializer
+class WishViewSet(viewsets.ModelViewSet):
+    queryset = Wish.objects.all()
+    serializer_class = WishSerializer
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = AbilityPagination  # Додаємо пагінацію
 
     def get_queryset(self):
         user = self.request.user
-        return get_visible_abilities(user)
+        return super().get_queryset().filter(author=user)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -58,7 +57,7 @@ class AbilityViewSet(viewsets.ModelViewSet):
         return super().retrieve(request, *args, **kwargs)
 
     @action(detail=False, methods=['get'])
-    def user_abilities(self, request):
+    def user_wish(self, request):
         user_id = request.query_params.get('user_id')
         if not user_id:
             return Response({'detail': 'User ID parameter is required.'}, status=400)
@@ -69,7 +68,7 @@ class AbilityViewSet(viewsets.ModelViewSet):
             raise NotFound('User with this ID does not exist.')
 
         viewing_user = request.user
-        abilities = Ability.objects.filter(author=requested_user)
+        abilities = Wish.objects.filter(author=requested_user)
 
         visible_abilities = [ability for ability in abilities if can_view_ability(viewing_user, ability)]
 
