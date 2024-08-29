@@ -12,6 +12,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Wish
 from .serializers import WishSerializer
 from .filters import WishFilter
+from .pagination import WishPagination
 
 from user.models import BazhayUser
 
@@ -45,6 +46,7 @@ class WishViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = WishFilter
+    pagination_class = WishPagination
 
     def get_queryset(self) -> QuerySet:
         """Returns the QuerySet of wish of the requesting user"""
