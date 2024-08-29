@@ -1,8 +1,8 @@
 from django.core.cache import cache
 from rest_framework import serializers
-import uuid
 
 from .models import BazhayUser
+from .type_field import Base64ImageField
 
 
 class CreateUserSerializer(serializers.Serializer):
@@ -41,6 +41,7 @@ class ConfirmCodeSerializer(serializers.Serializer):
 class UpdateUserSerializers(serializers.ModelSerializer):
     email = serializers.EmailField(read_only=True)
     is_guest = serializers.BooleanField(read_only=True)
+    photo = serializers.ImageField(read_only=True)
 
     class Meta:
         model = BazhayUser
@@ -106,3 +107,12 @@ class ConvertGuestUserSerializer(serializers.ModelSerializer):
         instance.is_guest = False
         instance.save()
         return instance
+
+
+class UpdateUserPhotoSerializer(serializers.ModelSerializer):
+    photo = Base64ImageField()
+
+    class Meta:
+        model = BazhayUser
+        fields = ['photo']
+

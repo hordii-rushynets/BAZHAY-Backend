@@ -12,7 +12,8 @@ from .serializers import (CreateUserSerializer,
                           EmailUpdateSerializer,
                           EmailConfirmSerializer,
                           GuestUserSerializer,
-                          ConvertGuestUserSerializer,)
+                          ConvertGuestUserSerializer,
+                          UpdateUserPhotoSerializer)
 
 from .utils import save_and_send_confirmation_code
 from permission.permissions import (IsRegisteredUser,
@@ -116,3 +117,12 @@ class GuestUserViewSet(viewsets.ViewSet):
                 'access': str(refresh.access_token),
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UpdateUserPhotoViewSet(viewsets.ModelViewSet):
+    queryset = BazhayUser.objects.all()
+    serializer_class = UpdateUserPhotoSerializer
+    permission_classes = [IsRegisteredUserOrReadOnly]
+
+    def get_object(self):
+        return self.queryset.filter(id=self.request.user.id).first()
