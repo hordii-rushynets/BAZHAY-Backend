@@ -1,3 +1,5 @@
+from typing import Optional
+from rest_framework.request import Request
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
@@ -16,7 +18,8 @@ class BrandViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
 
     @action(detail=True, methods=['get'], url_path='abilities')
-    def paginated_abilities(self, request, slug=None):
+    def paginated_abilities(self, request: Request, slug: Optional[str] = None) -> Response:
+        """Returns the paginated wish list of the original brand"""
         brand = self.get_object()
         abilities = brand.abilities.all()
         paginator = WishPagination()

@@ -2,7 +2,7 @@ from django.core.cache import cache
 from rest_framework import serializers
 
 from .models import BazhayUser
-from .type_field import Base64ImageField
+from base64_conversion.conversion import Base64ImageField
 
 
 class CreateUserSerializer(serializers.Serializer):

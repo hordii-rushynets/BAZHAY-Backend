@@ -3,6 +3,7 @@ from .models import Brand
 
 
 class BrandTranslationOptions(TranslationOptions):
+    """Brand Translation"""
     fields = ('name', 'description')
 
 
