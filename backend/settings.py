@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'ability',
     'brand',
     'subscription',
+    'news',
 ]
 
 MIDDLEWARE = [

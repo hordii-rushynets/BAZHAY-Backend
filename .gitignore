@@ -76,3 +76,4 @@ subscription/migrations
 common/migrations
 brand/migrations
 ability/migrations
+news/migrations

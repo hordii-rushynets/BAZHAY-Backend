@@ -8,20 +8,20 @@ from rest_framework.response import Response
 from ability.pagination import WishPagination
 from ability.serializers import WishSerializer
 
-from .serializers import BrandSerializer, Brand
+from .serializers import NewsSerializers, News
 
 
-class BrandViewSet(viewsets.ReadOnlyModelViewSet):
+class NewsViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
-    queryset = Brand.objects.all()
-    serializer_class = BrandSerializer
+    queryset = News.objects.all().order_by('-priority')  # Sort by priority (from highest to lowest)
+    serializer_class = NewsSerializers
     lookup_field = 'slug'
 
     @action(detail=True, methods=['get'], url_path='wish')
     def paginated_abilities(self, request: Request, slug: Optional[str] = None) -> Response:
         """Returns the paginated wish list of the original brand"""
-        brand = self.get_object()
-        wish = brand.wish.all()
+        news = self.get_object()
+        wish = news.wish.all()
         paginator = WishPagination()
         page = paginator.paginate_queryset(wish, request)
 
