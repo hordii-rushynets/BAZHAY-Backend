@@ -7,9 +7,11 @@ from rest_framework.request import Request
 
 from django.db.models.query import QuerySet
 from django.db.models import Q
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Wish
 from .serializers import WishSerializer
+from .filters import WishFilter
 
 from user.models import BazhayUser
 
@@ -41,6 +43,8 @@ class WishViewSet(viewsets.ModelViewSet):
     queryset = Wish.objects.all()
     serializer_class = WishSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = WishFilter
 
     def get_queryset(self) -> QuerySet:
         """Returns the QuerySet of wish of the requesting user"""
