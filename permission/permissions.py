@@ -2,17 +2,20 @@ from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
 class IsGuestUser(BasePermission):
-    def has_permission(self, request, view):
+    """Provides a toast to a guest user """
+    def has_permission(self, request, view) -> bool:
         return request.user.is_authenticated and request.user.is_guest
 
 
 class IsRegisteredUser(BasePermission):
-    def has_permission(self, request, view):
+    """Grant access to a regular user, deny access to a guest """
+    def has_permission(self, request, view) -> bool:
         return request.user.is_authenticated and not request.user.is_guest
 
 
 class IsRegisteredUserOrReadOnly(BasePermission):
-    def has_permission(self, request, view):
+    """Give full access to a regular user, if a guest user, then only for reading """
+    def has_permission(self, request, view) -> bool:
         if not request.user.is_authenticated:
             return False
 

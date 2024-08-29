@@ -5,6 +5,7 @@ from django.conf import settings
 
 @shared_task
 def send_email(email, confirmation_code):
+    """Celery task for send email"""
     send_mail(
         'Your Confirmation Code',
         f'Your confirmation code is {confirmation_code}',

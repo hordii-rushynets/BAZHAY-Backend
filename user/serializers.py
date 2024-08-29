@@ -6,9 +6,11 @@ from base64_conversion.conversion import Base64ImageField
 
 
 class CreateUserSerializer(serializers.Serializer):
+    """Serializer for create or get user"""
     email = serializers.EmailField()
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> BazhayUser:
+        """create or get user"""
         email = validated_data.get('email')
         user, created = BazhayUser.objects.get_or_create(email=email)
         if created:
@@ -18,10 +20,12 @@ class CreateUserSerializer(serializers.Serializer):
 
 
 class ConfirmCodeSerializer(serializers.Serializer):
+    """Serializer check confirm code"""
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6)
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
+        """validate confirm code"""
         email = data.get('email')
         confirmation_code = data.get('code')
 
@@ -39,6 +43,7 @@ class ConfirmCodeSerializer(serializers.Serializer):
 
 
 class UpdateUserSerializers(serializers.ModelSerializer):
+    """Serializers for update or get user data"""
     email = serializers.EmailField(read_only=True)
     is_guest = serializers.BooleanField(read_only=True)
     photo = serializers.ImageField(read_only=True)
@@ -50,22 +55,27 @@ class UpdateUserSerializers(serializers.ModelSerializer):
 
 
 class EmailUpdateSerializer(serializers.Serializer):
+    """Serializers for update user email"""
+
     email = serializers.EmailField()
 
     def validate_email(self, value):
+        """validate email"""
         if BazhayUser.objects.filter(email=value).exists():
             raise serializers.ValidationError('Email is already in use')
         return value
 
 
 class EmailConfirmSerializer(serializers.Serializer):
+    """Serializer check confirm code"""
     code = serializers.CharField()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         self.user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
 
-    def validate_code(self, value):
+    def validate_code(self, value: dict) -> dict:
+        """validate confirm code"""
         new_email = cache.get(f"pending_email_change_{self.user.id}")
         if not new_email:
             raise serializers.ValidationError('No pending email change found')
@@ -76,7 +86,8 @@ class EmailConfirmSerializer(serializers.Serializer):
 
         return value
 
-    def save(self):
+    def save(self) -> None:
+        """Save new email"""
         new_email = cache.get(f"pending_email_change_{self.user.id}")
         self.user.email = new_email
         self.user.save()
@@ -86,9 +97,10 @@ class EmailConfirmSerializer(serializers.Serializer):
 
 
 class GuestUserSerializer(serializers.Serializer):
+    """Serializer for create or get guest user"""
     imei = serializers.CharField(max_length=15)
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> BazhayUser:
         imei = validated_data.get('imei')
         user, create = BazhayUser.objects.get_or_create(is_guest=True, imei=imei)
         if create:
@@ -98,11 +110,13 @@ class GuestUserSerializer(serializers.Serializer):
 
 
 class ConvertGuestUserSerializer(serializers.ModelSerializer):
+    """Serializer for create user based on guest user"""
     class Meta:
         model = BazhayUser
         fields = ['email']
 
-    def update(self, instance, validated_data):
+    def update(self, instance, validated_data: dict) -> dict:
+        """Update guest user to standard user"""
         instance.email = validated_data.get('email', instance.email)
         instance.is_guest = False
         instance.save()
@@ -110,6 +124,8 @@ class ConvertGuestUserSerializer(serializers.ModelSerializer):
 
 
 class UpdateUserPhotoSerializer(serializers.ModelSerializer):
+    """Serializer for update user photo"""
+
     photo = Base64ImageField()
 
     class Meta:

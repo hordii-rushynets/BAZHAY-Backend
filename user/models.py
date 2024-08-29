@@ -34,6 +34,7 @@ class BazhayUserManager(BaseUserManager):
 
 
 class BazhayUser(AbstractBaseUser, PermissionsMixin):
+    """Custom model for user"""
     email = models.EmailField(_('email address'), unique=True)
     username = models.CharField(_('username'), max_length=150, unique=True, blank=True, null=True)
     birthday = models.DateField(blank=True, null=True)
@@ -57,5 +58,5 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
-    def __str__(self):
-        return self.email
+    def __str__(self) -> str:
+        return str(self.email)

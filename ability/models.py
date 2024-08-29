@@ -11,7 +11,6 @@ def validate_media(value):
         return
 
     content_type = value.file.content_type
-
     if not content_type.startswith(('image/', 'video/')):
         raise ValidationError('Only images and videos are allowed.')
 

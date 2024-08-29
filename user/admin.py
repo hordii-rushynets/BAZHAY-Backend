@@ -4,6 +4,7 @@ from .models import BazhayUser
 
 
 class BazhayUserAdmin(UserAdmin):
+    """Bazhay User Admin"""
     model = BazhayUser
     list_display = ('email', 'username', 'first_name', 'last_name')
     search_fields = ('email', 'username', 'first_name', 'last_name')

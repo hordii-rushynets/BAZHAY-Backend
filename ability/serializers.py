@@ -7,6 +7,7 @@ from base64_conversion import conversion
 
 
 class WishSerializer(serializers.ModelSerializer):
+    """Wish Serializer"""
     media = conversion.Base64MediaField(required=False)
     author = UpdateUserSerializers(read_only=True)
 

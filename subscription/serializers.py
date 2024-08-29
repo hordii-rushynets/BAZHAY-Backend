@@ -5,6 +5,7 @@ from user.models import BazhayUser
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
+    """Subscription serializer"""
     user = UpdateUserSerializers(read_only=True)
     subscribed_to = UpdateUserSerializers(read_only=True)
     subscribed_to_id = serializers.IntegerField(write_only=True)
@@ -13,7 +14,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         model = Subscription
         fields = ['user', 'subscribed_to', 'subscribed_to_id', 'created_at']
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
+        """validate data"""
         subscribed_to_id = data.get('subscribed_to_id')
         request_user = self.context['request'].user
 
@@ -28,7 +30,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         data['subscribed_to'] = subscribed_to_user
         return data
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> Subscription:
+        """Create or get subscription"""
         user = self.context['request'].user
         subscribed_to = validated_data['subscribed_to']
         subscription, created = Subscription.objects.get_or_create(user=user, subscribed_to=subscribed_to)
@@ -38,7 +41,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
         return subscription
 
-    def delete(self):
+    def delete(self) -> Subscription:
+        """Delete subscription"""
         user = self.context['request'].user
         subscribed_to = self.validated_data['subscribed_to']
         subscription = Subscription.objects.filter(user=user, subscribed_to=subscribed_to).first()
