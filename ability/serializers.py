@@ -8,6 +8,7 @@ from base64_conversion import conversion
 
 class WishSerializer(serializers.ModelSerializer):
     media = serializers.SerializerMethodField()
+    author = UpdateUserSerializers(read_only=True)
 
     class Meta:
         model = Wish
@@ -16,8 +17,8 @@ class WishSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'author']
 
     def get_media(self, obj):
-        # If needed, modify this method to return the media URL or base64 data
-        # depending on the requirements of your frontend
+        '''Return the media URL or base64 data
+        depending on the requirements of frontend'''
         request = self.context.get('request')
         if obj.media and request:
             return request.build_absolute_uri(obj.media.url)

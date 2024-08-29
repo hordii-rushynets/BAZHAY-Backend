@@ -28,7 +28,7 @@ class Wish(models.Model):
     additional_description = models.TextField(blank=True, null=True)
     access_type = models.CharField(max_length=20, choices=ACCESS_TYPE_CHOICES, default='everyone')
     author = models.ForeignKey(BazhayUser, related_name='abilities', on_delete=models.CASCADE)
-    currency = models.CharField(max_length=50, null=True, blank=True)
+    currency = models.CharField(max_length=50, null=True, blank=True, choices=CURRENCY_CHOICES)
     is_fully_created = models.BooleanField(default=False)
 
     def __str__(self):
