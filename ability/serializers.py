@@ -14,6 +14,6 @@ class WishSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wish
         fields = ['id', 'name', 'media', 'price', 'link', 'description',
-                  'additional_description', 'access_type', 'currency', 'is_fully_created', 'author']
-        read_only_fields = ['id', 'author']
+                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'author']
+        read_only_fields = ['id', 'author', 'created_at']
 

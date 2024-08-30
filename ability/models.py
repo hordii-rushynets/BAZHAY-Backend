@@ -10,8 +10,8 @@ def validate_media(value):
     if not value:
         return
 
-    content_type = value.file.content_type
-    if not content_type.startswith(('image/', 'video/')):
+    content_type = getattr(value, 'content_type', None)
+    if content_type and not content_type.startswith(('image/', 'video/')):
         raise ValidationError('Only images and videos are allowed.')
 
 
@@ -29,6 +29,7 @@ class Wish(models.Model):
     author = models.ForeignKey(BazhayUser, related_name='abilities', on_delete=models.CASCADE)
     currency = models.CharField(max_length=50, null=True, blank=True, choices=CURRENCY_CHOICES)
     is_fully_created = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def __str__(self):
         return self.name
