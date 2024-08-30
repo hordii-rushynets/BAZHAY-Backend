@@ -47,11 +47,22 @@ class UpdateUserSerializers(serializers.ModelSerializer):
     email = serializers.EmailField(read_only=True)
     is_guest = serializers.BooleanField(read_only=True)
     photo = serializers.ImageField(read_only=True)
+    subscription = serializers.SerializerMethodField()
+    subscriber = serializers.SerializerMethodField()
 
     class Meta:
         model = BazhayUser
         fields = ['id', 'photo', 'email', 'first_name', 'last_name', 'username',
-                  'birthday', 'view_birthday', 'about_user', 'sex', 'is_guest']
+                  'birthday', 'view_birthday', 'about_user', 'sex', 'is_guest',
+                  'subscription', 'subscriber']
+
+    def get_subscription(self, obj):
+        """Return the count of subscriptions"""
+        return obj.subscriptions.count()
+
+    def get_subscriber(self, obj):
+        """Return the count of subscribers"""
+        return obj.subscribers.count()
 
 
 class EmailUpdateSerializer(serializers.Serializer):
