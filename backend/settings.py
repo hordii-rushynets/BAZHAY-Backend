@@ -42,9 +42,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'rest_framework_simplejwt.token_blacklist',
+
     'modeltranslation',
 
     'user',
+    'ability',
+    'brand',
+    'subscription',
 ]
 
 MIDDLEWARE = [
@@ -89,6 +94,9 @@ DATABASES = {
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'qwerty123'),
         'HOST': os.getenv('POSTGRES_HOST', 'db'),
         'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        'TEST': {
+            'NAME': 'test_bazhay',
+        },
     }
 }
 

@@ -3,7 +3,9 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import serializers
 
 from .models import BazhayUser
 from .serializers import (CreateUserSerializer,
@@ -20,7 +22,8 @@ from permission.permissions import (IsRegisteredUser,
                                     IsRegisteredUserOrReadOnly)
 
 
-def is_valid(serializer):
+def is_valid(serializer: serializers.Serializer) -> Response:
+    """Checks data in the serializer"""
     if serializer.is_valid():
         user = serializer.save()
         save_and_send_confirmation_code(user.email)
@@ -29,9 +32,11 @@ def is_valid(serializer):
 
 
 class AuthViewSet(viewsets.ViewSet):
+    """View set for registration, login, transformation guest user in standard user"""
     permission_classes = [AllowAny]
 
-    def create(self, request):
+    def create(self, request: Request) -> Response:
+        """registration, login, transformation guest user in standard user"""
         if request.user.is_authenticated and request.user.is_guest:
             serializer = ConvertGuestUserSerializer(data=request.data, instance=request.user)
             return is_valid(serializer)
@@ -40,7 +45,8 @@ class AuthViewSet(viewsets.ViewSet):
             return is_valid(serializer)
 
     @action(detail=False, methods=['post'], url_path='confirm')
-    def confirm_code(self, request):
+    def confirm_code(self, request: Request) -> Response:
+        """Check confirm code"""
         serializer = ConfirmCodeSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
@@ -68,6 +74,7 @@ class AuthViewSet(viewsets.ViewSet):
 
 
 class UpdateUserViewSet(viewsets.GenericViewSet, viewsets.mixins.UpdateModelMixin, viewsets.mixins.RetrieveModelMixin):
+    """Update and get user"""
     queryset = BazhayUser.objects.all()
     serializer_class = UpdateUserSerializers
     permission_classes = [IsRegisteredUserOrReadOnly]
@@ -79,7 +86,8 @@ class UpdateUserViewSet(viewsets.GenericViewSet, viewsets.mixins.UpdateModelMixi
 class UpdateUserEmailViewSet(viewsets.ViewSet):
     permission_classes = [IsRegisteredUser]
 
-    def create(self, request):
+    def create(self, request: Request) -> Response:
+        """Update user email"""
         serializer = EmailUpdateSerializer(data=request.data)
         user = request.user
 
@@ -92,7 +100,7 @@ class UpdateUserEmailViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['post'], url_path='confirm')
-    def confirm_code(self, request):
+    def confirm_code(self, request: Request) -> Response:
         user = request.user
         serializer = EmailConfirmSerializer(data=request.data, user=user)
 
@@ -104,9 +112,10 @@ class UpdateUserEmailViewSet(viewsets.ViewSet):
 
 
 class GuestUserViewSet(viewsets.ViewSet):
+    """create and login guest user"""
     permission_classes = [AllowAny]
 
-    def create(self, request):
+    def create(self, request: Request) -> Response:
         serializer = GuestUserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
