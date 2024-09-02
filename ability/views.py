@@ -9,8 +9,8 @@ from django.db.models.query import QuerySet
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Wish
-from .serializers import WishSerializer
+from .models import Wish, Reservation
+from .serializers import WishSerializer, ReservationSerializer
 from .filters import WishFilter
 from .pagination import WishPagination
 
@@ -93,3 +93,14 @@ class WishViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(visible_abilities, many=True)
         return Response(serializer.data)
+
+
+class ReservationViewSet(viewsets.ModelViewSet):
+    queryset = Reservation.objects.all()
+    serializer_class = ReservationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self) -> QuerySet:
+        """Returns the QuerySet of reservation of the requesting user"""
+        bazhay_user = self.request.user
+        return super().get_queryset().filter(bazhay_user=bazhay_user)
