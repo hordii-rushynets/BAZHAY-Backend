@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from .models import BazhayUser
@@ -49,6 +50,7 @@ class UpdateUserSerializers(serializers.ModelSerializer):
     photo = serializers.ImageField(read_only=True)
     subscription = serializers.SerializerMethodField()
     subscriber = serializers.SerializerMethodField()
+    is_premium = serializers.SerializerMethodField()
 
     class Meta:
         model = BazhayUser
@@ -63,6 +65,12 @@ class UpdateUserSerializers(serializers.ModelSerializer):
     def get_subscriber(self, obj):
         """Return the count of subscribers"""
         return obj.subscribers.count()
+
+    def get_is_premium(self, obj):
+        try:
+            return obj.premium.is_active
+        except:
+            return False
 
 
 class EmailUpdateSerializer(serializers.Serializer):
