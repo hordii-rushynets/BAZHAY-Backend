@@ -26,7 +26,8 @@ urlpatterns = [
     path('api/brand/', include('brand.urls')),
     path('api/subscription/', include('subscription.urls')),
     path('api/wish/', include('ability.urls')),
-    path('api/news/', include('news.urls'))
+    path('api/news/', include('news.urls')),
+    path('api/premium/', include('premium.urls')),
 ]
 
 if settings.DEBUG:
