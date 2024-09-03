@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'brand',
     'subscription',
     'news',
+    'premium',
 ]
 
 MIDDLEWARE = [
