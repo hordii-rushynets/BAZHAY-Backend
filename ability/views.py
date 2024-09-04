@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, NotFound
@@ -74,22 +74,20 @@ class WishViewSet(viewsets.ModelViewSet):
 
         return super().retrieve(request, *args, **kwargs)
 
-    @action(detail=False, methods=['get'])
-    def user_wish(self, request: Request) -> Response:
-        """Returns all user wish by id"""
-        user_id = request.query_params.get('user_id')
-        if not user_id:
-            return Response({'detail': 'User ID parameter is required.'}, status=400)
 
-        try:
-            requested_user = BazhayUser.objects.get(id=user_id)
-        except BazhayUser.DoesNotExist:
-            raise NotFound('User with this ID does not exist.')
+class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Wish.objects.all()
+    serializer_class = WishSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = WishFilter
+    pagination_class = WishPagination
 
-        viewing_user = request.user
-        abilities = Wish.objects.filter(author=requested_user)
-
-        visible_abilities = [ability for ability in abilities if can_view_ability(viewing_user, ability)]
-
-        serializer = self.get_serializer(visible_abilities, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        user = self.request.user
+        return Wish.objects.filter(
+            Q(access_type='everyone') |
+            Q(access_type='only_me', author=user) |
+            Q(access_type='subscribers', author__in=Subscription.objects.filter(user=user).values_list('subscribed_to', flat=True)) |
+            Q(author=user)
+        ).distinct()

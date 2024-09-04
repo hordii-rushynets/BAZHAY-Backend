@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from .models import Wish
 
 from user.serializers import UpdateUserSerializers
+from brand.serializers import BrandSerializer
 from base64_conversion import conversion
 
 
@@ -11,11 +12,13 @@ class WishSerializer(serializers.ModelSerializer):
     """Wish Serializer"""
     media = conversion.Base64MediaField(required=False)
     author = UpdateUserSerializers(read_only=True)
+    brand_author = BrandSerializer(read_only=True)
 
     class Meta:
         model = Wish
         fields = ['id', 'name', 'media', 'price', 'link', 'description',
-                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'author']
+                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'author',
+                  'brand_author']
         read_only_fields = ['id', 'author', 'created_at']
 
     def validate(self, data):
