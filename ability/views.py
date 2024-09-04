@@ -1,20 +1,20 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions
 from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
+from rest_framework.views import APIView
 
 from django.db.models.query import QuerySet
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
+from django.urls import reverse
+from django.shortcuts import get_object_or_404
 
 from .models import Wish
 from .serializers import WishSerializer
 from .filters import WishFilter
 from .pagination import WishPagination
-
-from user.models import BazhayUser
 
 from subscription.models import Subscription
 
@@ -91,3 +91,10 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
             Q(access_type='subscribers', author__in=Subscription.objects.filter(user=user).values_list('subscribed_to', flat=True)) |
             Q(author=user)
         ).distinct()
+
+
+class WishShareView(APIView):
+    def get(self, request, pk):
+        wish = get_object_or_404(Wish, pk=pk)
+        share_link = request.build_absolute_uri(reverse('wish-detail', kwargs={'pk': pk}))
+        return Response({'share_link': share_link})

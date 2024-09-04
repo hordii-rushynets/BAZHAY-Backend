@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 
 import ability.choices as choices
 
@@ -44,4 +45,7 @@ class Wish(models.Model):
         return '-'
 
     display_author.short_description = 'Author'
+
+    def get_share_link(self):
+        return reverse('wish-detail', kwargs={'pk': self.pk}, request=self.request)
 
