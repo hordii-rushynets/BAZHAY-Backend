@@ -55,7 +55,7 @@ class UpdateUserSerializers(serializers.ModelSerializer):
     class Meta:
         model = BazhayUser
         fields = ['id', 'photo', 'email', 'first_name', 'last_name', 'username',
-                  'birthday', 'view_birthday', 'about_user', 'sex', 'is_guest', 'is_premium',
+                  'birthday', 'view_birthday', 'about_user', 'sex', 'is_guest', 'is_premium', 'is_already_registered',
                   'subscription', 'subscriber']
 
     def get_subscription(self, obj):
