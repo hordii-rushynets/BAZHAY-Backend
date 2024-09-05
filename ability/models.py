@@ -19,9 +19,11 @@ def validate_media(value):
 class Wish(models.Model):
     ACCESS_TYPE_CHOICES = choices.access_type_choices
     CURRENCY_CHOICES = choices.currency_choices
+    IMAGE_SIZE_CHOICES = choices.image_size_choices
 
     name = models.CharField(max_length=128)
     media = models.FileField(upload_to='ability_media/', blank=True, null=True, validators=[validate_media])
+    image_size = models.CharField(max_length=10, choices=IMAGE_SIZE_CHOICES, blank=True, null=True)
     price = models.PositiveIntegerField(blank=True, null=True)
     link = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -44,4 +46,5 @@ class Wish(models.Model):
         return '-'
 
     display_author.short_description = 'Author'
+
 
