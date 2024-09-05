@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 
 import ability.choices as choices
 
@@ -22,7 +23,8 @@ class Wish(models.Model):
 
     name = models.CharField(max_length=128)
     media = models.FileField(upload_to='ability_media/', blank=True, null=True, validators=[validate_media])
-    price = models.PositiveIntegerField(blank=True, null=True)
+    price = models.FloatField(blank=True, null=True)
+    price_in_uah = models.FloatField(blank=True, null=True)
     link = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     additional_description = models.TextField(blank=True, null=True)
