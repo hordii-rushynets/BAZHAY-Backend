@@ -17,9 +17,9 @@ class WishSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wish
         fields = ['id', 'name', 'media', 'price', 'link', 'description',
-                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'author',
-                  'brand_author']
-        read_only_fields = ['id', 'author', 'created_at']
+                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'image_size',
+                  'author', 'brand_author']
+        read_only_fields = ['id', 'author', 'created_at', 'brand_author']
 
     def validate(self, data):
         user = self.context['request'].user
@@ -31,7 +31,7 @@ class WishSerializer(serializers.ModelSerializer):
                 raise ValidationError("You cannot create more than 10 wishes without a premium subscription.")
 
         # Validation of the view
-        if not is_premium and 'access_type' in data and data['access_type'] != 'default_value':
+        if not is_premium and 'access_type' in data and data['access_type'] != 'everyone':
             raise ValidationError(
                 "You cannot change the access type to a non-default value without a premium subscription.")
 
