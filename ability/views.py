@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from .tasks import redis_client
 from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
@@ -14,9 +14,9 @@ from .serializers import WishSerializer
 from .filters import WishFilter
 from .pagination import WishPagination
 
-from user.models import BazhayUser
-
 from subscription.models import Subscription
+
+from django.core.cache import cache
 
 
 def get_visible_abilities(user):

@@ -1,5 +1,4 @@
 from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from .models import BazhayUser

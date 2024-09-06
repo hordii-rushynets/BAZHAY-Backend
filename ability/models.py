@@ -1,10 +1,20 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
+
 import ability.choices as choices
+from .tasks import redis_client
+
 
 from user.models import BazhayUser
 from brand.models import Brand
+
+
+def get_currency(currency: str) -> float | int:
+    currency_rates = redis_client.get('currency_rates')
+    if currency_rates:
+        currency_rates = eval(currency_rates.decode('utf-8'))
+        return currency_rates.get(currency)
 
 
 def validate_media(value):
@@ -45,3 +55,7 @@ class Wish(models.Model):
 
     display_author.short_description = 'Author'
 
+    @property
+    def get_transform_price(self):
+        cost = get_currency(str(self.currency))
+        return self.price * cost

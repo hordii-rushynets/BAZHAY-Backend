@@ -35,6 +35,7 @@ services:
       bash -c "
               sleep 3 &&
               celery -A backend worker -E -B -ldebug
+              celery -A backend beat -E -B -ldebug
               "
 
   redis:
