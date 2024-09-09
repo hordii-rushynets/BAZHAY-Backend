@@ -10,13 +10,14 @@ from base64_conversion import conversion
 
 class WishSerializer(serializers.ModelSerializer):
     """Wish Serializer"""
-    media = conversion.Base64MediaField(required=False)
+    photo = conversion.Base64ImageField(required=False)
+    video = conversion.Base64VideoField(required=False)
     author = UpdateUserSerializers(read_only=True)
     brand_author = BrandSerializer(read_only=True)
 
     class Meta:
         model = Wish
-        fields = ['id', 'name', 'media', 'price', 'link', 'description',
+        fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
                   'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'image_size',
                   'author', 'brand_author']
         read_only_fields = ['id', 'author', 'created_at', 'brand_author']
@@ -31,7 +32,7 @@ class WishSerializer(serializers.ModelSerializer):
                 raise ValidationError("You cannot create more than 10 wishes without a premium subscription.")
 
         # Validation of the view
-        if not is_premium and 'access_type' in data and data['access_type'] != 'everyone':
+        if not is_premium and 'access_type' in data and data('access_type') != 'everyone':
             raise ValidationError(
                 "You cannot change the access type to a non-default value without a premium subscription.")
 

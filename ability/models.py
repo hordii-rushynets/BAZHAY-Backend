@@ -7,13 +7,14 @@ from user.models import BazhayUser
 from brand.models import Brand
 
 
-def validate_media(value):
-    if not value:
+def validate_video_file(file):
+    if not file:
         return
 
-    content_type = getattr(value, 'content_type', None)
-    if content_type and not content_type.startswith(('image/', 'video/')):
-        raise ValidationError('Only images and videos are allowed.')
+    valid_mime_types = choices.valid_mime_types
+    file_type = file.content_type
+    if file_type not in valid_mime_types:
+        raise ValidationError('Only video files are allowed.')
 
 
 class Wish(models.Model):
@@ -22,7 +23,8 @@ class Wish(models.Model):
     IMAGE_SIZE_CHOICES = choices.image_size_choices
 
     name = models.CharField(max_length=128)
-    media = models.FileField(upload_to='ability_media/', blank=True, null=True, validators=[validate_media])
+    photo = models.ImageField(upload_to='ability_media/',  blank=True, null=True,)
+    video = models.FileField(upload_to='ability_media/', blank=True, null=True, validators=[validate_video_file])
     image_size = models.CharField(max_length=10, choices=IMAGE_SIZE_CHOICES, blank=True, null=True)
     price = models.PositiveIntegerField(blank=True, null=True)
     link = models.URLField(blank=True, null=True)

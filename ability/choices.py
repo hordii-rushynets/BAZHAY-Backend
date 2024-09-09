@@ -22,3 +22,5 @@ image_size_choices = [
         ("1:1", "1x1"),
         ("4:3", "4x3"),
 ]
+
+valid_mime_types = ['video/mp4', 'video/avi', 'video/mov', 'video/mpeg']
