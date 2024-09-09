@@ -32,7 +32,7 @@ class WishSerializer(serializers.ModelSerializer):
                 raise ValidationError("You cannot create more than 10 wishes without a premium subscription.")
 
         # Validation of the view
-        if not is_premium and 'access_type' in data and data('access_type') != 'everyone':
+        if not is_premium and 'access_type' in data and data['access_type'] != 'everyone':
             raise ValidationError(
                 "You cannot change the access type to a non-default value without a premium subscription.")
 
