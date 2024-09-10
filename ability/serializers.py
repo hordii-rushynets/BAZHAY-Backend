@@ -1,11 +1,14 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 from .models import Wish
 
 from user.serializers import UpdateUserSerializers
 from brand.serializers import BrandSerializer
 from base64_conversion import conversion
+
+import boto3
 
 
 class WishSerializer(serializers.ModelSerializer):
@@ -22,18 +25,61 @@ class WishSerializer(serializers.ModelSerializer):
                   'author', 'brand_author']
         read_only_fields = ['id', 'author', 'created_at', 'brand_author']
 
-    def validate(self, data):
-        user = self.context['request'].user
-        is_premium = hasattr(user, 'premium') and user.premium.is_active
+    def validate_photo(self, photo):
+        if photo is None:
+            raise ValidationError("Photo cannot be None.")
 
-        # Validation of the number of wishes
-        if not is_premium:
-            if Wish.objects.filter(author=user).count() >= 10:
-                raise ValidationError("You cannot create more than 10 wishes without a premium subscription.")
+        photo_data = photo.read()
+        if not photo_data:
+            raise ValidationError("The uploaded photo is empty or invalid.")
 
-        # Validation of the view
-        if not is_premium and 'access_type' in data and data['access_type'] != 'everyone':
-            raise ValidationError(
-                "You cannot change the access type to a non-default value without a premium subscription.")
+        rekognition_client = boto3.client('rekognition', region_name=settings.AWS_S3_REGION_NAME)
+        response = rekognition_client.detect_labels(
+            Image={
+                'Bytes': photo_data
+            },
+            MaxLabels=10
+        )
 
-        return data
+        if not self.is_valid_image(response):
+            raise ValidationError("The uploaded image contains inappropriate content.")
+        return photo
+
+    def validate_video(self, video):
+        if video is None:
+            raise ValidationError("Video cannot be None.")
+
+        video_data = video.read()
+        if not video_data:
+            raise ValidationError("The uploaded photo is empty or invalid.")
+
+        rekognition_client = boto3.client('rekognition', region_name=settings.AWS_S3_REGION_NAME)
+        response = rekognition_client.start_label_detection(
+            Video={
+                'Bytes': video_data
+            }
+        )
+        job_id = response['JobId']
+
+        result = rekognition_client.get_label_detection(JobId=job_id)
+
+        if not self.is_valid_video(result):
+            raise ValidationError("The uploaded video contains inappropriate content.")
+        return video
+
+    def is_valid_image(self, rekognition_response):
+        # Logic to check the image for unwanted content
+        for label in rekognition_response.get('Labels', []):
+            print(label)
+            if label['Name'] in ['Explicit Nudity', 'Violence', 'Hate Symbols', 'Childbirth', 'Injury']:
+                return False
+        return True
+
+    def is_valid_video(self, rekognition_response):
+        # Logic to check the video for unwanted content
+        for label_detection in rekognition_response.get('Labels', []):
+            label = label_detection['Label']
+            print(label)
+            if label['Name'] in ['Explicit Nudity', 'Violence', 'Hate Symbols', 'Childbirth', 'Injury']:
+                return False
+        return True
