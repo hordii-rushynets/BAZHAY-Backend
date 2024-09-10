@@ -7,7 +7,9 @@ class WishFilter(django_filters.FilterSet):
     price = django_filters.OrderingFilter(fields=[('price', 'min'), ('-price', 'max'),])
     created = django_filters.OrderingFilter(fields=[('created_at', 'faster'), ('-created_at', 'later'),])
     access = django_filters.CharFilter(field_name='access_type')
+    brand = django_filters.CharFilter(field_name='brand_author__slug')
+    user = django_filters.NumberFilter(field_name='author__id')
 
     class Meta:
         model = Wish
-        fields = ['is_fully_created', 'price', 'created', 'access']
+        fields = ['is_fully_created', 'price', 'created', 'access', 'brand', 'user']

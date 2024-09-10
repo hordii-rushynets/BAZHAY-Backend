@@ -1,5 +1,8 @@
 from django.contrib import admin
 from .models import Wish, Reservation
 
-admin.site.register(Wish)
-admin.site.register(Reservation)
+
+@admin.register(Wish)
+class WithAdmin(admin.ModelAdmin):
+    list_display = ['name', 'display_author']
+    search_fields = ['author__email', 'brand_author__nickname', 'name']
