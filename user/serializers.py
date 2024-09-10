@@ -121,7 +121,7 @@ class GuestUserSerializer(serializers.Serializer):
 
     def create(self, validated_data: dict) -> BazhayUser:
         imei = validated_data.get('imei')
-        user, create = BazhayUser.objects.get_or_create(is_guest=True, imei=imei)
+        user, create = BazhayUser.objects.get_or_create(is_guest=True, imei=imei, email=None)
         if create:
             user.is_already_registered = False
             user.save()
