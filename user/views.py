@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 
 from .models import BazhayUser
+from .authentication import IgnoreInvalidTokenAuthentication
 from .serializers import (CreateUserSerializer,
                           ConfirmCodeSerializer,
                           UpdateUserSerializers,
@@ -16,8 +17,8 @@ from .serializers import (CreateUserSerializer,
                           GuestUserSerializer,
                           ConvertGuestUserSerializer,
                           UpdateUserPhotoSerializer)
-
 from .utils import save_and_send_confirmation_code
+
 from permission.permissions import (IsRegisteredUser,
                                     IsRegisteredUserOrReadOnly)
 
@@ -33,6 +34,7 @@ def is_valid(serializer: serializers.Serializer) -> Response:
 
 class AuthViewSet(viewsets.ViewSet):
     """View set for registration, login, transformation guest user in standard user"""
+    authentication_classes = [IgnoreInvalidTokenAuthentication]
     permission_classes = [AllowAny]
 
     def create(self, request: Request) -> Response:
@@ -113,6 +115,7 @@ class UpdateUserEmailViewSet(viewsets.ViewSet):
 
 class GuestUserViewSet(viewsets.ViewSet):
     """create and login guest user"""
+    authentication_classes = [IgnoreInvalidTokenAuthentication]
     permission_classes = [AllowAny]
 
     def create(self, request: Request) -> Response:
