@@ -9,8 +9,8 @@ from django.db.models.query import QuerySet
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Wish
-from .serializers import WishSerializer
+from .models import Wish, Reservation
+from .serializers import WishSerializer, ReservationSerializer
 from .filters import WishFilter
 from .pagination import WishPagination
 
@@ -73,7 +73,7 @@ class WishViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'You do not have permission to view this ability.'}, status=403)
 
         return super().retrieve(request, *args, **kwargs)
-
+ 
 
 class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Wish.objects.all()
@@ -82,7 +82,7 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = WishFilter
     pagination_class = WishPagination
-
+    
     def get_queryset(self):
         user = self.request.user
         return Wish.objects.filter(
@@ -91,3 +91,15 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
             Q(access_type='subscribers', author__in=Subscription.objects.filter(user=user).values_list('subscribed_to', flat=True)) |
             Q(author=user)
         ).distinct()
+
+
+class ReservationViewSet(viewsets.ModelViewSet):
+    queryset = Reservation.objects.all()
+    serializer_class = ReservationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self) -> QuerySet:
+        """Returns the QuerySet of reservation of the requesting user"""
+        bazhay_user = self.request.user
+        return super().get_queryset().filter(bazhay_user=bazhay_user)
+

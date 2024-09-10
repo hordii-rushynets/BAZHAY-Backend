@@ -37,6 +37,14 @@ class Wish(models.Model):
 
     def __str__(self):
         return self.name
+      
+
+class Reservation(models.Model):
+    bazhay_user = models.ForeignKey(BazhayUser, related_name='reservation', on_delete=models.CASCADE)
+    wish = models.ForeignKey(Wish, related_name='reservation', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.bazhay_user} reservation {self.wish.name}"
 
     def display_author(self):
         if self.author:
@@ -46,5 +54,3 @@ class Wish(models.Model):
         return '-'
 
     display_author.short_description = 'Author'
-
-
