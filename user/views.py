@@ -66,8 +66,6 @@ class AuthViewSet(viewsets.ViewSet):
                 'access': str(refresh.access_token),
             }
             status_code = status.HTTP_200_OK if is_already_registered else status.HTTP_201_CREATED
-            user.is_already_registered = True
-            user.save()
             return Response(data, status=status_code)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
