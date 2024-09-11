@@ -1,6 +1,5 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, mixins
 from rest_framework.response import Response
-from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
@@ -102,13 +101,7 @@ class ReservationViewSet(viewsets.ModelViewSet):
         return super().get_queryset().filter(bazhay_user=bazhay_user)
 
 
-class VideoViewSet(viewsets.ViewSet):
+class VideoViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = Wish.objects.all()
+    serializer_class = VideoSerializer
     permission_classes = [permissions.IsAuthenticated]
-
-    def create(self, request):
-        serializer = VideoSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-
-        serializer.save()
-
-        return Response(status=status.HTTP_200_OK)

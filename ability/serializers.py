@@ -29,7 +29,6 @@ class WishSerializer(serializers.ModelSerializer):
                   'author', 'brand_author']
         read_only_fields = ['id', 'author', 'created_at', 'brand_author']
 
-
     def validate(self, data):
         user = self.context['request'].user
         is_premium = hasattr(user, 'premium') and user.premium.is_active
@@ -81,35 +80,47 @@ class ReservationSerializer(serializers.Serializer):
         return reservation
 
 
-class VideoSerializer(serializers.Serializer):
-    video = serializers.FileField()
-    start = serializers.IntegerField()
-    end = serializers.IntegerField()
-    wish = serializers.IntegerField()
+class VideoSerializer(serializers.ModelSerializer):
+    video = serializers.FileField(write_only=True)
+    start = serializers.IntegerField(write_only=True)
+    end = serializers.IntegerField(write_only=True)
+    wish_id = serializers.PrimaryKeyRelatedField(queryset=Wish.objects.all(), write_only=True)
+
+    class Meta:
+        model = Wish
+        fields = ['wish_id', "video", "start", "end"]
 
     def validate(self, attrs):
         if attrs['end'] <= attrs['start']:
             raise serializers.ValidationError("The time frame is not correct")
+
+        wish = attrs['wish_id']
+        if wish.author != self.context['request'].user:
+            raise serializers.ValidationError("You are not the author of this wish.")
+
+        attrs['wish'] = wish
+        del attrs['wish_id']
+
         return attrs
 
     def create(self, validated_data):
         video = validated_data.get('video')
         start = validated_data.get('start')
         end = validated_data.get('end')
-        wish_id = validated_data.get('wish')
+        wish = validated_data.get('wish')
+
+        original_filename = video.name
 
         with VideoFileClip(video.temporary_file_path()) as clip:
             trimmed_clip = clip.subclip(start, end)
-
-            trimmed_path = "/tmp/trimmed_video.mp4"
+            trimmed_path = "/tmp/" + original_filename
             trimmed_clip.write_videofile(trimmed_path, codec="libx264", audio_codec="aac")
 
             with open(trimmed_path, "rb") as f:
                 trimmed_video_content = f.read()
 
-        wish = get_object_or_404(Wish, id=wish_id, author=self.context['request'].user)
-
-        wish.video.save("trimmed_video.mp4", ContentFile(trimmed_video_content))
+        wish.video.save(original_filename, ContentFile(trimmed_video_content))
         wish.save()
 
         return wish
+
