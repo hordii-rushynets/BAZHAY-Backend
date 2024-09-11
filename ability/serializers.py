@@ -10,15 +10,19 @@ from base64_conversion import conversion
 
 class WishSerializer(serializers.ModelSerializer):
     """Wish Serializer"""
-    media = conversion.Base64MediaField(required=False)
+    photo = conversion.Base64ImageField(required=False)
+    video = conversion.Base64VideoField(required=False)
     author = UpdateUserSerializers(read_only=True)
     is_reservation = serializers.SerializerMethodField()
 
     class Meta:
         model = Wish
-        fields = ['id', 'name', 'media', 'price', 'link', 'description','additional_description', 'access_type',
-                  'currency', 'created_at', 'is_fully_created', 'is_reservation', 'author']
-        read_only_fields = ['id', 'author', 'created_at']
+
+        fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
+                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'is_reservation', 'image_size',
+                  'author', 'brand_author']
+        read_only_fields = ['id', 'author', 'created_at', 'brand_author']
+
 
     def validate(self, data):
         user = self.context['request'].user
@@ -69,3 +73,4 @@ class ReservationSerializer(serializers.Serializer):
         user = self.context['request'].user
         reservation = Reservation.objects.create(bazhay_user=user, **validated_data)
         return reservation
+
