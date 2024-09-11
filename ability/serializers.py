@@ -1,5 +1,8 @@
-from rest_framework import serializers
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
+
+from rest_framework import serializers
 
 from .models import Wish, Reservation
 
@@ -7,12 +10,15 @@ from user.serializers import UpdateUserSerializers
 from brand.serializers import BrandSerializer
 from base64_conversion import conversion
 
+from moviepy.editor import VideoFileClip
+
 
 class WishSerializer(serializers.ModelSerializer):
     """Wish Serializer"""
     photo = conversion.Base64ImageField(required=False)
     video = conversion.Base64VideoField(required=False)
     author = UpdateUserSerializers(read_only=True)
+    brand_author = BrandSerializer(read_only=True)
     is_reservation = serializers.SerializerMethodField()
 
     class Meta:
@@ -74,3 +80,36 @@ class ReservationSerializer(serializers.Serializer):
         reservation = Reservation.objects.create(bazhay_user=user, **validated_data)
         return reservation
 
+
+class VideoSerializer(serializers.Serializer):
+    video = serializers.FileField()
+    start = serializers.IntegerField()
+    end = serializers.IntegerField()
+    wish = serializers.IntegerField()
+
+    def validate(self, attrs):
+        if attrs['end'] <= attrs['start']:
+            raise serializers.ValidationError("The time frame is not correct")
+        return attrs
+
+    def create(self, validated_data):
+        video = validated_data.get('video')
+        start = validated_data.get('start')
+        end = validated_data.get('end')
+        wish_id = validated_data.get('wish')
+
+        with VideoFileClip(video.temporary_file_path()) as clip:
+            trimmed_clip = clip.subclip(start, end)
+
+            trimmed_path = "/tmp/trimmed_video.mp4"
+            trimmed_clip.write_videofile(trimmed_path, codec="libx264", audio_codec="aac")
+
+            with open(trimmed_path, "rb") as f:
+                trimmed_video_content = f.read()
+
+        wish = get_object_or_404(Wish, id=wish_id, author=self.context['request'].user)
+
+        wish.video.save("trimmed_video.mp4", ContentFile(trimmed_video_content))
+        wish.save()
+
+        return wish
