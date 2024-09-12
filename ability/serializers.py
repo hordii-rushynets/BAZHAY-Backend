@@ -86,30 +86,26 @@ class VideoSerializer(serializers.ModelSerializer):
     video = serializers.FileField(write_only=True)
     start = serializers.IntegerField(write_only=True)
     end = serializers.IntegerField(write_only=True)
-    wish_id = serializers.PrimaryKeyRelatedField(queryset=Wish.objects.all(), write_only=True)
 
     class Meta:
         model = Wish
-        fields = ['wish_id', "video", "start", "end"]
+        fields = ['id', "video", "start", "end"]
 
     def validate(self, attrs):
         if attrs['end'] <= attrs['start']:
             raise serializers.ValidationError("The time frame is not correct")
 
-        wish = attrs['wish_id']
-        if wish.author != self.context['request'].user:
-            raise serializers.ValidationError("You are not the author of this wish.")
+        user = self.context['request'].user
 
-        attrs['wish'] = wish
-        del attrs['wish_id']
+        if self.instance and self.instance.author != user:
+            raise serializers.ValidationError("You do not have permission to modify this wish.")
 
         return attrs
 
-    def create(self, validated_data):
+    def update(self, instance, validated_data):
         video = validated_data.get('video')
         start = validated_data.get('start')
         end = validated_data.get('end')
-        wish = validated_data.get('wish')
 
         original_filename = video.name
 
@@ -121,8 +117,8 @@ class VideoSerializer(serializers.ModelSerializer):
             with open(trimmed_path, "rb") as f:
                 trimmed_video_content = f.read()
 
-        wish.video.save(original_filename, ContentFile(trimmed_video_content))
-        wish.save()
+        instance.video.save(original_filename, ContentFile(trimmed_video_content))
+        instance.save()
 
-        return wish
+        return instance
 

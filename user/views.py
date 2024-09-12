@@ -1,5 +1,5 @@
 from django.core.cache import cache
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -73,7 +73,10 @@ class AuthViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UpdateUserViewSet(viewsets.GenericViewSet, viewsets.mixins.UpdateModelMixin, viewsets.mixins.RetrieveModelMixin):
+class UpdateUserViewSet(viewsets.GenericViewSet,
+                        mixins.UpdateModelMixin,
+                        mixins.RetrieveModelMixin,
+                        mixins.DestroyModelMixin):
     """Update and get user"""
     queryset = BazhayUser.objects.all()
     serializer_class = UpdateUserSerializers
