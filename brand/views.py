@@ -21,7 +21,7 @@ class BrandViewSet(viewsets.ReadOnlyModelViewSet):
     def paginated_abilities(self, request: Request, slug: Optional[str] = None) -> Response:
         """Returns the paginated wish list of the original brand"""
         brand = self.get_object()
-        wish = brand.wish.all()
+        wish = brand.wishes.all()
         paginator = WishPagination()
         page = paginator.paginate_queryset(wish, request)
 

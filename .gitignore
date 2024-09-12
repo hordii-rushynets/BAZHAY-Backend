@@ -77,3 +77,4 @@ common/migrations
 brand/migrations
 ability/migrations
 news/migrations
+premium/migrations
