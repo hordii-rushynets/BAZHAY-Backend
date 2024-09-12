@@ -1,9 +1,7 @@
 from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from .models import BazhayUser
-from base64_conversion.conversion import Base64ImageField
 
 
 class CreateUserSerializer(serializers.Serializer):
@@ -145,7 +143,7 @@ class ConvertGuestUserSerializer(serializers.ModelSerializer):
 class UpdateUserPhotoSerializer(serializers.ModelSerializer):
     """Serializer for update user photo"""
 
-    photo = Base64ImageField()
+    photo = serializers.ImageField()
 
     class Meta:
         model = BazhayUser
