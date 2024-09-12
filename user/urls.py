@@ -16,7 +16,7 @@ router.register(r'auth/guest', GuestUserViewSet, basename='auth_guest')
 router.register(r'user/update-email', UpdateUserEmailViewSet, basename='update_email')
 
 urlpatterns = router.urls + [
-    path('user/', UpdateUserViewSet.as_view({'get': 'retrieve', 'put': 'update'})),
+    path('user/', UpdateUserViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', TokenBlacklistView.as_view(), name='logout'),
     path('user/photo/', UpdateUserPhotoViewSet.as_view({'put': 'update'})),

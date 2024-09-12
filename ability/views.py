@@ -101,7 +101,9 @@ class ReservationViewSet(viewsets.ModelViewSet):
         return super().get_queryset().filter(bazhay_user=bazhay_user)
 
 
-class VideoViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+class VideoViewSet(mixins.UpdateModelMixin,
+                   viewsets.GenericViewSet):
     queryset = Wish.objects.all()
     serializer_class = VideoSerializer
     permission_classes = [permissions.IsAuthenticated]
+
