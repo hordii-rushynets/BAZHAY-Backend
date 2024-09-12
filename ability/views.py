@@ -1,7 +1,6 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, mixins
 from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
 
@@ -10,11 +9,9 @@ from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Wish, Reservation
-from .serializers import WishSerializer, ReservationSerializer
+from .serializers import WishSerializer, ReservationSerializer, VideoSerializer
 from .filters import WishFilter
 from .pagination import WishPagination
-
-from user.models import BazhayUser
 
 from subscription.models import Subscription
 
@@ -103,3 +100,8 @@ class ReservationViewSet(viewsets.ModelViewSet):
         bazhay_user = self.request.user
         return super().get_queryset().filter(bazhay_user=bazhay_user)
 
+
+class VideoViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = Wish.objects.all()
+    serializer_class = VideoSerializer
+    permission_classes = [permissions.IsAuthenticated]

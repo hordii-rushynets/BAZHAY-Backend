@@ -117,7 +117,7 @@ class EmailConfirmSerializer(serializers.Serializer):
 
 class GuestUserSerializer(serializers.Serializer):
     """Serializer for create or get guest user"""
-    imei = serializers.CharField(max_length=15)
+    imei = serializers.CharField()
 
     def create(self, validated_data: dict) -> BazhayUser:
         imei = validated_data.get('imei')

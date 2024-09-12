@@ -1,5 +1,8 @@
-from rest_framework import serializers
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
+
+from rest_framework import serializers
 
 from .models import Wish, Reservation
 
@@ -7,12 +10,15 @@ from user.serializers import UpdateUserSerializers
 from brand.serializers import BrandSerializer
 from base64_conversion import conversion
 
+from moviepy.editor import VideoFileClip
+
 
 class WishSerializer(serializers.ModelSerializer):
     """Wish Serializer"""
     photo = conversion.Base64ImageField(required=False)
     video = conversion.Base64VideoField(required=False)
     author = UpdateUserSerializers(read_only=True)
+    brand_author = BrandSerializer(read_only=True)
     is_reservation = serializers.SerializerMethodField()
 
     class Meta:
@@ -22,7 +28,6 @@ class WishSerializer(serializers.ModelSerializer):
                   'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'is_reservation', 'image_size',
                   'author', 'brand_author']
         read_only_fields = ['id', 'author', 'created_at', 'brand_author']
-
 
     def validate(self, data):
         user = self.context['request'].user
@@ -73,4 +78,49 @@ class ReservationSerializer(serializers.Serializer):
         user = self.context['request'].user
         reservation = Reservation.objects.create(bazhay_user=user, **validated_data)
         return reservation
+
+
+class VideoSerializer(serializers.ModelSerializer):
+    video = serializers.FileField(write_only=True)
+    start = serializers.IntegerField(write_only=True)
+    end = serializers.IntegerField(write_only=True)
+    wish_id = serializers.PrimaryKeyRelatedField(queryset=Wish.objects.all(), write_only=True)
+
+    class Meta:
+        model = Wish
+        fields = ['wish_id', "video", "start", "end"]
+
+    def validate(self, attrs):
+        if attrs['end'] <= attrs['start']:
+            raise serializers.ValidationError("The time frame is not correct")
+
+        wish = attrs['wish_id']
+        if wish.author != self.context['request'].user:
+            raise serializers.ValidationError("You are not the author of this wish.")
+
+        attrs['wish'] = wish
+        del attrs['wish_id']
+
+        return attrs
+
+    def create(self, validated_data):
+        video = validated_data.get('video')
+        start = validated_data.get('start')
+        end = validated_data.get('end')
+        wish = validated_data.get('wish')
+
+        original_filename = video.name
+
+        with VideoFileClip(video.temporary_file_path()) as clip:
+            trimmed_clip = clip.subclip(start, end)
+            trimmed_path = "/tmp/" + original_filename
+            trimmed_clip.write_videofile(trimmed_path, codec="libx264", audio_codec="aac")
+
+            with open(trimmed_path, "rb") as f:
+                trimmed_video_content = f.read()
+
+        wish.video.save(original_filename, ContentFile(trimmed_video_content))
+        wish.save()
+
+        return wish
 
