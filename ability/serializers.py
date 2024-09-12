@@ -1,6 +1,5 @@
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.shortcuts import get_object_or_404
 
 from rest_framework import serializers
 
@@ -9,14 +8,16 @@ from .models import Wish, Reservation
 from user.serializers import UpdateUserSerializers
 from brand.serializers import BrandSerializer
 from moviepy.editor import VideoFileClip
+from news.serializers import NewsSerializers
 
 
 class WishSerializer(serializers.ModelSerializer):
     """Wish Serializer"""
-    photo = serializers.FileField(required=False)
-    video = serializers.ImageField(required=False)
+    photo = serializers.ImageField(required=False)
+    video = serializers.FileField(required=False)
     author = UpdateUserSerializers(read_only=True)
     brand_author = BrandSerializer(read_only=True)
+    news_author = NewsSerializers(read_only=True)
     is_reservation = serializers.SerializerMethodField()
 
     class Meta:
@@ -24,8 +25,8 @@ class WishSerializer(serializers.ModelSerializer):
 
         fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
                   'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'is_reservation', 'image_size',
-                  'author', 'brand_author']
-        read_only_fields = ['id', 'author', 'created_at', 'brand_author']
+                  'author', 'brand_author', 'news_author']
+        read_only_fields = ['id', 'author', 'created_at', 'brand_author', 'news_author']
 
     def validate(self, data):
         user = self.context['request'].user
@@ -67,7 +68,10 @@ class ReservationSerializer(serializers.Serializer):
             raise serializers.ValidationError("You can't reserve your wishes")
 
         if Reservation.objects.filter(wish=wish).exists():
-            raise serializers.ValidationError("This wish is already reserved.")
+            raise serializers.ValidationError("This wish is already reserved")
+
+        if not wish.author and (wish.news_author or wish.brand_author):
+            raise serializers.ValidationError("You can't reserve this wishes")
 
         return attrs
 
