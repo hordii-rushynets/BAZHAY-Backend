@@ -8,15 +8,13 @@ from .models import Wish, Reservation
 
 from user.serializers import UpdateUserSerializers
 from brand.serializers import BrandSerializer
-from base64_conversion import conversion
-
 from moviepy.editor import VideoFileClip
 
 
 class WishSerializer(serializers.ModelSerializer):
     """Wish Serializer"""
-    photo = conversion.Base64ImageField(required=False)
-    video = conversion.Base64VideoField(required=False)
+    photo = serializers.FileField(required=False)
+    video = serializers.ImageField(required=False)
     author = UpdateUserSerializers(read_only=True)
     brand_author = BrandSerializer(read_only=True)
     is_reservation = serializers.SerializerMethodField()
