@@ -21,7 +21,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
     def paginated_abilities(self, request: Request, slug: Optional[str] = None) -> Response:
         """Returns the paginated wish list of the original brand"""
         news = self.get_object()
-        wish = news.wish.all()
+        wish = news.wishes.all()
         paginator = WishPagination()
         page = paginator.paginate_queryset(wish, request)
 

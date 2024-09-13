@@ -1,25 +1,32 @@
-from rest_framework import serializers
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
 
-from .models import Wish
+from rest_framework import serializers
+
+from .models import Wish, Reservation
 
 from user.serializers import UpdateUserSerializers
 from brand.serializers import BrandSerializer
-from base64_conversion import conversion
+from moviepy.editor import VideoFileClip
+from news.serializers import NewsSerializers
 
 
 class WishSerializer(serializers.ModelSerializer):
     """Wish Serializer"""
-    media = conversion.Base64MediaField(required=False)
+    photo = serializers.ImageField(required=False)
+    video = serializers.FileField(required=False)
     author = UpdateUserSerializers(read_only=True)
     brand_author = BrandSerializer(read_only=True)
+    news_author = NewsSerializers(read_only=True)
+    is_reservation = serializers.SerializerMethodField()
 
     class Meta:
         model = Wish
-        fields = ['id', 'name', 'media', 'price', 'link', 'description',
-                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'image_size',
-                  'author', 'brand_author']
-        read_only_fields = ['id', 'author', 'created_at', 'brand_author']
+
+        fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
+                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'is_reservation', 'image_size',
+                  'author', 'brand_author', 'news_author']
+        read_only_fields = ['id', 'author', 'created_at', 'brand_author', 'news_author']
 
     def validate(self, data):
         user = self.context['request'].user
@@ -36,3 +43,82 @@ class WishSerializer(serializers.ModelSerializer):
                 "You cannot change the access type to a non-default value without a premium subscription.")
 
         return data
+
+    def get_is_reservation(self, obj: Wish) -> bool:
+        return Reservation.objects.filter(wish=obj).exists()
+
+
+class ReservationSerializer(serializers.Serializer):
+    """Reservation serializer"""
+    bazhay_user = UpdateUserSerializers(read_only=True)
+    wish = WishSerializer(read_only=True)
+    wish_id = serializers.PrimaryKeyRelatedField(queryset=Wish.objects.all(), write_only=True, source='wish')
+
+    class Meta:
+        model = Reservation
+        fields = ['id', 'bazhay_user', 'wish']
+        read_only_fields = ['id']
+
+    def validate(self, attrs: dict) -> dict:
+        """Validate data"""
+        user = self.context['request'].user
+        wish = attrs.get('wish')
+
+        if wish.author == user:
+            raise serializers.ValidationError("You can't reserve your wishes")
+
+        if Reservation.objects.filter(wish=wish).exists():
+            raise serializers.ValidationError("This wish is already reserved")
+
+        if not wish.author and (wish.news_author or wish.brand_author):
+            raise serializers.ValidationError("You can't reserve this wishes")
+
+        return attrs
+
+    def create(self, validated_data: dict) -> Reservation:
+        """Create new wish reservation"""
+        user = self.context['request'].user
+        reservation = Reservation.objects.create(bazhay_user=user, **validated_data)
+        return reservation
+
+
+class VideoSerializer(serializers.ModelSerializer):
+    video = serializers.FileField(write_only=True)
+    start = serializers.IntegerField(write_only=True)
+    end = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Wish
+        fields = ['id', "video", "start", "end"]
+
+    def validate(self, attrs):
+        if attrs['end'] <= attrs['start']:
+            raise serializers.ValidationError("The time frame is not correct")
+
+        user = self.context['request'].user
+
+        if self.instance and self.instance.author != user:
+            raise serializers.ValidationError("You do not have permission to modify this wish.")
+
+        return attrs
+
+    def update(self, instance, validated_data):
+        video = validated_data.get('video')
+        start = validated_data.get('start')
+        end = validated_data.get('end')
+
+        original_filename = video.name
+
+        with VideoFileClip(video.temporary_file_path()) as clip:
+            trimmed_clip = clip.subclip(start, end)
+            trimmed_path = "/tmp/" + original_filename
+            trimmed_clip.write_videofile(trimmed_path, codec="libx264", audio_codec="aac")
+
+            with open(trimmed_path, "rb") as f:
+                trimmed_video_content = f.read()
+
+        instance.video.save(original_filename, ContentFile(trimmed_video_content))
+        instance.save()
+
+        return instance
+

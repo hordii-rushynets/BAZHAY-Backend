@@ -1,7 +1,6 @@
 from django.db import models
 
 from common.models import Slug
-from ability.models import Wish
 
 
 class News(Slug):
@@ -9,7 +8,6 @@ class News(Slug):
     photo = models.ImageField(upload_to='news_photos/')
     title = models.CharField()
     description = models.TextField()
-    wish = models.ManyToManyField(Wish, related_name='news')
     priority = models.PositiveSmallIntegerField(default=0)
 
     class Meta:

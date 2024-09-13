@@ -1,9 +1,7 @@
 from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from .models import BazhayUser
-from base64_conversion.conversion import Base64ImageField
 
 
 class CreateUserSerializer(serializers.Serializer):
@@ -117,11 +115,11 @@ class EmailConfirmSerializer(serializers.Serializer):
 
 class GuestUserSerializer(serializers.Serializer):
     """Serializer for create or get guest user"""
-    imei = serializers.CharField(max_length=15)
+    imei = serializers.CharField()
 
     def create(self, validated_data: dict) -> BazhayUser:
         imei = validated_data.get('imei')
-        user, create = BazhayUser.objects.get_or_create(is_guest=True, imei=imei)
+        user, create = BazhayUser.objects.get_or_create(is_guest=True, imei=imei, email=None)
         if create:
             user.is_already_registered = False
             user.save()
@@ -145,7 +143,7 @@ class ConvertGuestUserSerializer(serializers.ModelSerializer):
 class UpdateUserPhotoSerializer(serializers.ModelSerializer):
     """Serializer for update user photo"""
 
-    photo = Base64ImageField()
+    photo = serializers.ImageField()
 
     class Meta:
         model = BazhayUser

@@ -1,5 +1,5 @@
 from django.core.cache import cache
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 
 from .models import BazhayUser
+from .authentication import IgnoreInvalidTokenAuthentication
 from .serializers import (CreateUserSerializer,
                           ConfirmCodeSerializer,
                           UpdateUserSerializers,
@@ -16,8 +17,8 @@ from .serializers import (CreateUserSerializer,
                           GuestUserSerializer,
                           ConvertGuestUserSerializer,
                           UpdateUserPhotoSerializer)
-
 from .utils import save_and_send_confirmation_code
+
 from permission.permissions import (IsRegisteredUser,
                                     IsRegisteredUserOrReadOnly)
 
@@ -33,6 +34,7 @@ def is_valid(serializer: serializers.Serializer) -> Response:
 
 class AuthViewSet(viewsets.ViewSet):
     """View set for registration, login, transformation guest user in standard user"""
+    authentication_classes = [IgnoreInvalidTokenAuthentication]
     permission_classes = [AllowAny]
 
     def create(self, request: Request) -> Response:
@@ -66,14 +68,15 @@ class AuthViewSet(viewsets.ViewSet):
                 'access': str(refresh.access_token),
             }
             status_code = status.HTTP_200_OK if is_already_registered else status.HTTP_201_CREATED
-            user.is_already_registered = True
-            user.save()
             return Response(data, status=status_code)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UpdateUserViewSet(viewsets.GenericViewSet, viewsets.mixins.UpdateModelMixin, viewsets.mixins.RetrieveModelMixin):
+class UpdateUserViewSet(viewsets.GenericViewSet,
+                        mixins.UpdateModelMixin,
+                        mixins.RetrieveModelMixin,
+                        mixins.DestroyModelMixin):
     """Update and get user"""
     queryset = BazhayUser.objects.all()
     serializer_class = UpdateUserSerializers
@@ -113,6 +116,7 @@ class UpdateUserEmailViewSet(viewsets.ViewSet):
 
 class GuestUserViewSet(viewsets.ViewSet):
     """create and login guest user"""
+    authentication_classes = [IgnoreInvalidTokenAuthentication]
     permission_classes = [AllowAny]
 
     def create(self, request: Request) -> Response:
