@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from ability.pagination import WishPagination
-from ability.serializers import WishSerializer
+from ability.serializers import WishSerializerForNotUser
 
 from .serializers import NewsSerializers, News
 
@@ -26,8 +26,8 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         page = paginator.paginate_queryset(wish, request)
 
         if page is not None:
-            serializer = WishSerializer(page, many=True)
+            serializer = WishSerializerForNotUser(page, many=True)
             return paginator.get_paginated_response(serializer.data)
 
-        serializer = WishSerializer(wish, many=True)
+        serializer = WishSerializerForNotUser(wish, many=True)
         return Response(serializer.data)
