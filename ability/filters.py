@@ -1,10 +1,38 @@
 import django_filters
 from .models import Wish
+from .services import CurrencyService
+from django.db.models import F, Case, When, ExpressionWrapper, FloatField
+
+
+class PriceOrderingFilter(django_filters.OrderingFilter):
+    def filter(self, qs, value):
+        currency_service: CurrencyService = CurrencyService()
+
+        exchange_rates = currency_service.get_exchange_rates(base_currency='USD') 
+
+        return qs.annotate(
+            price_in_usd=Case(
+                # When currency is USD, leave the price as is
+                When(currency='USD', then=F('price')),
+                # When currency is in UAH, convert it to USD
+                When(currency='UAH', then=ExpressionWrapper(F('price') / exchange_rates['UAH'], output_field=FloatField())),
+                # When currency is in EUR, convert it to USD
+                When(currency='EUR', then=ExpressionWrapper(F('price') / exchange_rates['EUR'], output_field=FloatField())),
+                # Add more cases for other currencies
+                When(currency='PLN', then=ExpressionWrapper(F('price') / exchange_rates['PLN'], output_field=FloatField())),
+                When(currency='GBP', then=ExpressionWrapper(F('price') / exchange_rates['GBP'], output_field=FloatField())),
+                When(currency='CAD', then=ExpressionWrapper(F('price') / exchange_rates['CAD'], output_field=FloatField())),
+                When(currency='NOK', then=ExpressionWrapper(F('price') / exchange_rates['NOK'], output_field=FloatField())),
+                When(currency='CHF', then=ExpressionWrapper(F('price') / exchange_rates['CHF'], output_field=FloatField())),
+                When(currency='SEK', then=ExpressionWrapper(F('price') / exchange_rates['SEK'], output_field=FloatField())),
+                output_field=FloatField(),
+            )
+        ).order_by('price_in_usd')
 
 
 class WishFilter(django_filters.FilterSet):
     is_fully_created = django_filters.BooleanFilter(field_name='is_fully_created')
-    price = django_filters.OrderingFilter(fields=[('price', 'min'), ('-price', 'max'),])
+    price = PriceOrderingFilter(fields=[('price', 'min'), ('-price', 'max'),])
     created = django_filters.OrderingFilter(fields=[('created_at', 'faster'), ('-created_at', 'later'),])
     access = django_filters.CharFilter(field_name='access_type')
     brand = django_filters.CharFilter(field_name='brand_author__slug')
