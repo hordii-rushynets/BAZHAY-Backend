@@ -19,16 +19,20 @@ class WishSerializer(serializers.ModelSerializer):
     brand_author = BrandSerializer(read_only=True)
     news_author = NewsSerializers(read_only=True)
     is_reservation = serializers.SerializerMethodField()
+    is_user_create = serializers.SerializerMethodField()
+    is_your_wish = serializers.SerializerMethodField()
 
     class Meta:
         model = Wish
 
         fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
-                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created', 'is_reservation', 'image_size',
-                  'author', 'brand_author', 'news_author']
+                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created',
+                  'is_reservation', 'is_user_create', 'is_your_wish', 'image_size', 'author', 'brand_author',
+                  'news_author']
         read_only_fields = ['id', 'author', 'created_at', 'brand_author', 'news_author']
 
-    def validate(self, data):
+    def validate(self, data: dict) -> dict:
+        """Validate data"""
         user = self.context['request'].user
         is_premium = hasattr(user, 'premium') and user.premium.is_active
 
@@ -45,7 +49,16 @@ class WishSerializer(serializers.ModelSerializer):
         return data
 
     def get_is_reservation(self, obj: Wish) -> bool:
+        """Get the wish is received"""
         return Reservation.objects.filter(wish=obj).exists()
+
+    def get_is_user_create(self, obj: Wish) -> bool:
+        """Get the wish created by the user is received"""
+        return True if obj.author else False
+
+    def get_is_your_wish(self, obj: Wish) -> bool:
+        """Get the wish is your"""
+        return obj.author == self.context['request'].user
 
 
 class ReservationSerializer(serializers.Serializer):
