@@ -135,3 +135,11 @@ class VideoSerializer(serializers.ModelSerializer):
 
         return instance
 
+
+class WishSerializerForNotUser(serializers.ModelSerializer):
+    """Wish Serializer"""
+
+    class Meta:
+        model = Wish
+        fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
+                  'additional_description', 'currency', 'created_at', 'image_size']
