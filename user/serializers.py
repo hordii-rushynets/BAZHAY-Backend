@@ -154,11 +154,12 @@ class UpdateUserPhotoSerializer(serializers.ModelSerializer):
 
 
 class GoogleAuthSerializer(serializers.ModelSerializer):
+    """Serializer for Google authorization"""
     token = serializers.CharField(write_only=True)
 
     class Meta:
         model = BazhayUser
-        fields = ['id', 'token',]
+        fields = ['id', 'token']
 
     def validate(self, attrs: dict) -> dict:
         id_info = id_token.verify_oauth2_token(attrs.get('token'), requests.Request())
@@ -169,6 +170,7 @@ class GoogleAuthSerializer(serializers.ModelSerializer):
         return id_info
 
     def create(self, validated_data: dict) -> BazhayUser:
+        """Create or get user"""
         try:
             user, created = BazhayUser.objects.get_or_create(
                 email=validated_data.get('email', ''),

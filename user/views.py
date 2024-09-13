@@ -143,9 +143,10 @@ class UpdateUserPhotoViewSet(viewsets.ModelViewSet):
 
 
 class GoogleLoginView(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    """View set for Google authorization"""
     serializer_class = GoogleAuthSerializer
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args, **kwargs) -> Response:
         serializer = GoogleAuthSerializer(data=request.data)
 
         if serializer.is_valid():
