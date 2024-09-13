@@ -3,6 +3,9 @@ from rest_framework import serializers
 
 from .models import BazhayUser
 
+from google.oauth2 import id_token
+from google.auth.transport import requests
+
 
 class CreateUserSerializer(serializers.Serializer):
     """Serializer for create or get user"""
@@ -148,4 +151,34 @@ class UpdateUserPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = BazhayUser
         fields = ['photo']
+
+
+class GoogleAuthSerializer(serializers.ModelSerializer):
+    token = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = BazhayUser
+        fields = ['id', 'token',]
+
+    def validate(self, attrs: dict) -> dict:
+        id_info = id_token.verify_oauth2_token(attrs.get('token'), requests.Request())
+
+        if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            raise serializers.ValidationError({'error': 'Wrong issuer.'})
+
+        return id_info
+
+    def create(self, validated_data: dict) -> BazhayUser:
+        try:
+            user, created = BazhayUser.objects.get_or_create(
+                email=validated_data.get('email', ''),
+                defaults={
+                    'username': validated_data.get('email', ''),
+                    'first_name': validated_data.get('given_name', ''),
+                    'last_name': validated_data.get('family_name', ''),
+                }
+            )
+            return user
+        except Exception:
+            raise serializers.ValidationError({'error': 'Something went wrong'})
 

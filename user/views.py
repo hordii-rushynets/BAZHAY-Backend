@@ -16,7 +16,8 @@ from .serializers import (CreateUserSerializer,
                           EmailConfirmSerializer,
                           GuestUserSerializer,
                           ConvertGuestUserSerializer,
-                          UpdateUserPhotoSerializer)
+                          UpdateUserPhotoSerializer,
+                          GoogleAuthSerializer)
 from .utils import save_and_send_confirmation_code
 
 from permission.permissions import (IsRegisteredUser,
@@ -139,3 +140,19 @@ class UpdateUserPhotoViewSet(viewsets.ModelViewSet):
 
     def get_object(self):
         return self.queryset.filter(id=self.request.user.id).first()
+
+
+class GoogleLoginView(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    serializer_class = GoogleAuthSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = GoogleAuthSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+            data = {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
+            }
+            return Response(data, status=status.HTTP_200_OK)
