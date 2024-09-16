@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 from .models import Wish, Reservation
 
-from user.serializers import UpdateUserSerializers
+from user.serializers import ShortUserSerializer
 from brand.serializers import BrandSerializer
 from moviepy.editor import VideoFileClip
 from news.serializers import NewsSerializers
@@ -15,7 +15,7 @@ class WishSerializer(serializers.ModelSerializer):
     """Wish Serializer"""
     photo = serializers.ImageField(required=False)
     video = serializers.FileField(required=False)
-    author = UpdateUserSerializers(read_only=True)
+    author = ShortUserSerializer(read_only=True)
     brand_author = BrandSerializer(read_only=True)
     news_author = NewsSerializers(read_only=True)
     is_reservation = serializers.SerializerMethodField()
@@ -63,7 +63,7 @@ class WishSerializer(serializers.ModelSerializer):
 
 class ReservationSerializer(serializers.Serializer):
     """Reservation serializer"""
-    bazhay_user = UpdateUserSerializers(read_only=True)
+    bazhay_user = ShortUserSerializer(read_only=True)
     wish = WishSerializer(read_only=True)
     wish_id = serializers.PrimaryKeyRelatedField(queryset=Wish.objects.all(), write_only=True, source='wish')
 

@@ -184,3 +184,9 @@ class GoogleAuthSerializer(serializers.ModelSerializer):
         except Exception:
             raise serializers.ValidationError({'error': 'Something went wrong'})
 
+
+class ShortUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BazhayUser
+        fields = ['id', 'photo', 'username', 'first_name', 'last_name']
+        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name']
