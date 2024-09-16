@@ -70,7 +70,7 @@ class WishViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'You do not have permission to view this ability.'}, status=403)
 
         return super().retrieve(request, *args, **kwargs)
- 
+
 
 class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Wish.objects.all()
@@ -82,12 +82,23 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return Wish.objects.filter(
+
+        queryset = Wish.objects.filter(
             Q(access_type='everyone') |
             Q(access_type='only_me', author=user) |
             Q(access_type='subscribers',
               author__in=Subscription.objects.filter(user=user).values_list('subscribed_to', flat=True))
-        ).exclude(author=user).distinct()
+        )
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset().exclude(author=self.request.user).distinct()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class ReservationViewSet(viewsets.ModelViewSet):
