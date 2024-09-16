@@ -1,3 +1,7 @@
+import os
+import random
+import string
+
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 
@@ -143,3 +147,57 @@ class WishSerializerForNotUser(serializers.ModelSerializer):
         model = Wish
         fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
                   'additional_description', 'currency', 'created_at', 'image_size']
+
+
+class CopyWishSerializer(serializers.Serializer):
+    """Copy wish serializer"""
+    id = serializers.IntegerField(write_only=True)
+
+    def validate(self, attrs):
+        wish_id = attrs.get('id')
+        if not wish_id:
+            raise serializers.ValidationError({'id': 'ID is required'})
+
+        try:
+            original_wish = Wish.objects.get(id=wish_id)
+        except Wish.DoesNotExist:
+            raise serializers.ValidationError({'id': 'Wish not found'})
+
+        attrs['original_wish'] = original_wish
+        return attrs
+
+    def generate_random_prefix(self, length=8):
+        """Generates a random prefix from letters and numbers."""
+        characters = string.ascii_letters + string.digits
+        return ''.join(random.choice(characters) for _ in range(length))
+
+    def copy_file(self, file):
+        """Copies a file with a random name prefix."""
+        if file:
+            prefix = self.generate_random_prefix()
+            file_name = os.path.basename(file.name)
+            return ContentFile(file.read(), name=f"{prefix}_{file_name}")
+        return None
+
+    def create(self, validated_data):
+        original_wish = validated_data.pop('original_wish')
+
+        new_wish_data = {
+            'name': original_wish.name,
+            'photo': self.copy_file(original_wish.photo),
+            'video': self.copy_file(original_wish.video),
+            'image_size': original_wish.image_size,
+            'price': original_wish.price,
+            'link': original_wish.link,
+            'description': original_wish.description,
+            'additional_description': original_wish.additional_description,
+            'access_type': original_wish.access_type,
+            'currency': original_wish.currency,
+            'is_fully_created': original_wish.is_fully_created,
+            'author': self.context['request'].user,
+            'brand_author': None,
+            'created_at': None
+        }
+
+        new_wish = Wish.objects.create(**new_wish_data)
+        return new_wish

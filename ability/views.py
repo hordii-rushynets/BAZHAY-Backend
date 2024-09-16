@@ -1,15 +1,20 @@
-from rest_framework import viewsets, permissions, mixins
+from rest_framework import viewsets, permissions, mixins, status
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
+from rest_framework.views import APIView
 
 from django.db.models.query import QuerySet
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Wish, Reservation
-from .serializers import WishSerializer, ReservationSerializer, VideoSerializer, WishSerializerForNotUser
+from .serializers import (WishSerializer,
+                          ReservationSerializer,
+                          VideoSerializer,
+                          WishSerializerForNotUser,
+                          CopyWishSerializer)
 from .filters import WishFilter
 from .pagination import WishPagination
 
@@ -107,3 +112,13 @@ class VideoViewSet(mixins.UpdateModelMixin,
     serializer_class = VideoSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+
+class CopyWishView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = CopyWishSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            new_wish = serializer.save()
+            return Response({'id': new_wish.id}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

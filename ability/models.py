@@ -1,3 +1,5 @@
+import mimetypes
+
 from django.db import models
 from django.core.exceptions import ValidationError
 
@@ -12,9 +14,10 @@ def validate_video_file(file):
     if not file:
         return
 
+    mime_type, encoding = mimetypes.guess_type(file.name)
     valid_mime_types = choices.valid_mime_types
-    file_type = file.content_type
-    if file_type not in valid_mime_types:
+
+    if mime_type not in valid_mime_types:
         raise ValidationError('Only video files are allowed.')
 
 
