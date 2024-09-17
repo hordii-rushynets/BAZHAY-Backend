@@ -1,12 +1,12 @@
 from rest_framework import generics
-from .serializers import SubscriptionSerializer, Subscription
+from .serializers import CreateOrDeleteSubscriptionSerializer, Subscription, SubscribersSerializer, SubscriptionsSerializer
 from permission.permissions import IsRegisteredUser
 from rest_framework.response import Response
 from rest_framework import status
 
 
 class SubscribeView(generics.CreateAPIView):
-    serializer_class = SubscriptionSerializer
+    serializer_class = CreateOrDeleteSubscriptionSerializer
     permission_classes = [IsRegisteredUser]
 
     def perform_create(self, serializer):
@@ -14,7 +14,7 @@ class SubscribeView(generics.CreateAPIView):
 
 
 class SubscriptionListView(generics.ListAPIView):
-    serializer_class = SubscriptionSerializer
+    serializer_class = CreateOrDeleteSubscriptionSerializer
     permission_classes = [IsRegisteredUser]
 
     def get_queryset(self):
@@ -30,23 +30,15 @@ class SubscriptionListView(generics.ListAPIView):
 
 
 class SubscriberListView(generics.ListAPIView):
-    serializer_class = SubscriptionSerializer
+    serializer_class = SubscribersSerializer
     permission_classes = [IsRegisteredUser]
 
     def get_queryset(self):
         return Subscription.objects.filter(subscribed_to=self.request.user)
 
-    def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
-        response.data = {
-            "count": len(response.data),
-            "subscribers": response.data
-        }
-        return response
-
 
 class UnsubscribeView(generics.GenericAPIView):
-    serializer_class = SubscriptionSerializer
+    serializer_class = CreateOrDeleteSubscriptionSerializer
     permission_classes = [IsRegisteredUser]
 
     def delete(self, request, *args, **kwargs):

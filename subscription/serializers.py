@@ -4,7 +4,7 @@ from user.serializers import UpdateUserSerializers
 from user.models import BazhayUser
 
 
-class SubscriptionSerializer(serializers.ModelSerializer):
+class CreateOrDeleteSubscriptionSerializer(serializers.ModelSerializer):
     """Subscription serializer"""
     user = UpdateUserSerializers(read_only=True)
     subscribed_to = UpdateUserSerializers(read_only=True)
@@ -52,3 +52,20 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
         subscription.delete()
         return subscription
+
+
+class SubscribersSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+
+    class Meta:
+        model = Subscription
+        fields = ['user']
+
+
+class SubscriptionsSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField()
+
+    class Meta:
+        model = Subscription
+        fields = ['subscribed_to']
+
