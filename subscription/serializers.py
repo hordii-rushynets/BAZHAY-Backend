@@ -55,17 +55,17 @@ class CreateOrDeleteSubscriptionSerializer(serializers.ModelSerializer):
 
 
 class SubscribersSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()
+    user = ShortUserSerializer(read_only=True)
 
     class Meta:
         model = Subscription
-        fields = ['user']
+        fields = ['id', 'user']
 
 
 class SubscriptionsSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()
+    subscribed_to = ShortUserSerializer(read_only=True)
 
     class Meta:
         model = Subscription
-        fields = ['subscribed_to']
+        fields = ['id', 'subscribed_to']
 

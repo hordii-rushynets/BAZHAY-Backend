@@ -3,6 +3,8 @@ from rest_framework import serializers
 
 from .models import BazhayUser
 
+from subscription.models import Subscription
+
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
@@ -52,6 +54,7 @@ class UpdateUserSerializers(serializers.ModelSerializer):
     subscription = serializers.SerializerMethodField()
     subscriber = serializers.SerializerMethodField()
     is_premium = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = BazhayUser
@@ -72,6 +75,10 @@ class UpdateUserSerializers(serializers.ModelSerializer):
             return obj.premium.is_active
         except:
             return False
+
+    def get_is_subscribed(self, obj):
+        request_user = self.context['request'].user
+        return Subscription.is_subscribed(request_user, obj)
 
 
 class EmailUpdateSerializer(serializers.Serializer):
@@ -186,7 +193,13 @@ class GoogleAuthSerializer(serializers.ModelSerializer):
 
 
 class ShortUserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
     class Meta:
         model = BazhayUser
-        fields = ['id', 'photo', 'username', 'first_name', 'last_name']
-        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name']
+        fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed']
+        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed']
+
+    def get_is_subscribed(self, obj):
+        request_user = self.context['request'].user
+        return Subscription.is_subscribed(request_user, obj)

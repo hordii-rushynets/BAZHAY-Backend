@@ -1,8 +1,12 @@
 from rest_framework import generics
-from .serializers import CreateOrDeleteSubscriptionSerializer, Subscription, SubscribersSerializer, SubscriptionsSerializer
-from permission.permissions import IsRegisteredUser
+from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
+
+from .serializers import CreateOrDeleteSubscriptionSerializer, Subscription, SubscribersSerializer, SubscriptionsSerializer
+
+from permission.permissions import IsRegisteredUser
+from .pagination import SubscriptionPagination
 
 
 class SubscribeView(generics.CreateAPIView):
@@ -13,25 +17,19 @@ class SubscribeView(generics.CreateAPIView):
         serializer.save(user=self.request.user)
 
 
-class SubscriptionListView(generics.ListAPIView):
-    serializer_class = CreateOrDeleteSubscriptionSerializer
+class SubscriptionListView(ReadOnlyModelViewSet):
+    serializer_class = SubscriptionsSerializer
     permission_classes = [IsRegisteredUser]
+    pagination_class = SubscriptionPagination
 
     def get_queryset(self):
         return Subscription.objects.filter(user=self.request.user)
 
-    def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
-        response.data = {
-            "count": len(response.data),
-            "subscriptions": response.data
-        }
-        return response
 
-
-class SubscriberListView(generics.ListAPIView):
+class SubscribersListView(ReadOnlyModelViewSet):
     serializer_class = SubscribersSerializer
     permission_classes = [IsRegisteredUser]
+    pagination_class = SubscriptionPagination
 
     def get_queryset(self):
         return Subscription.objects.filter(subscribed_to=self.request.user)

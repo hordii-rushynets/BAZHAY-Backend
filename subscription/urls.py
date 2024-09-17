@@ -2,12 +2,12 @@ from django.urls import path
 from .views import (SubscribeView,
                     UnsubscribeView,
                     SubscriptionListView,
-                    SubscriberListView)
+                    SubscribersListView)
 
 urlpatterns = [
     path('subscribe/', SubscribeView.as_view(), name='subscribe'),
     path('unsubscribe/', UnsubscribeView.as_view(), name='unsubscribe'),
 
-    path('subscriptions/', SubscriptionListView.as_view(), name='subscriptions'),
-    path('subscribers/', SubscriberListView.as_view(), name='subscribers'),
+    path('subscriptions/', SubscriptionListView.as_view({'get': 'list'}), name='subscriptions'),
+    path('subscribers/', SubscribersListView.as_view({'get': 'list'}), name='subscribers'),
 ]

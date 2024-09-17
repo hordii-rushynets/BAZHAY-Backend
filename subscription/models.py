@@ -13,3 +13,7 @@ class Subscription(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user.email} subscribed to {self.subscribed_to.email}"
+
+    @staticmethod
+    def is_subscribed(user, subscribed_to):
+        return Subscription.objects.filter(user=user, subscribed_to=subscribed_to).exists()
