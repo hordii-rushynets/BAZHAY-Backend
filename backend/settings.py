@@ -200,7 +200,6 @@ DEFAULT_FILE_STORAGE = 'backend.storages.CustomS3Boto3Storage'
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
 
 
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 

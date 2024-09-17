@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from .models import Subscription
-from user.serializers import UpdateUserSerializers
+from user.serializers import ShortUserSerializer
 from user.models import BazhayUser
 
 
 class CreateOrDeleteSubscriptionSerializer(serializers.ModelSerializer):
     """Subscription serializer"""
-    user = UpdateUserSerializers(read_only=True)
-    subscribed_to = UpdateUserSerializers(read_only=True)
+    user = ShortUserSerializer(read_only=True)
+    subscribed_to = ShortUserSerializer(read_only=True)
     subscribed_to_id = serializers.IntegerField(write_only=True)
 
     class Meta:
