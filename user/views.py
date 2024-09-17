@@ -175,3 +175,8 @@ class ListUserViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return self.queryset.exclude(id=self.request.user.id)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = UpdateUserSerializers(instance, context={'request': request})
+        return Response(serializer.data)
