@@ -192,7 +192,7 @@ class GoogleAuthSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'error': 'Something went wrong'})
 
 
-class ShortUserSerializer(serializers.ModelSerializer):
+class ShortBazhayUserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:

@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from django.utils import timezone
 
-from user.serializers import ShortUserSerializer
+from user.serializers import ShortBazhayUserSerializer
 
 from .models import Premium
 
 
 class PremiumSerializers(serializers.ModelSerializer):
-    bazhay_user = ShortUserSerializer(read_only=True)
+    bazhay_user = ShortBazhayUserSerializer(read_only=True)
     is_active = serializers.SerializerMethodField()
     code = serializers.CharField(write_only=True)
 

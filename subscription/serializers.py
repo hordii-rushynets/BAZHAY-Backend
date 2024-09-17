@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from .models import Subscription
-from user.serializers import ShortUserSerializer
+from user.serializers import ShortBazhayUserSerializer
 from user.models import BazhayUser
 
 
 class CreateOrDeleteSubscriptionSerializer(serializers.ModelSerializer):
     """Subscription serializer"""
-    user = ShortUserSerializer(read_only=True)
-    subscribed_to = ShortUserSerializer(read_only=True)
+    user = ShortBazhayUserSerializer(read_only=True)
+    subscribed_to = ShortBazhayUserSerializer(read_only=True)
     subscribed_to_id = serializers.IntegerField(write_only=True)
 
     class Meta:
@@ -55,7 +55,7 @@ class CreateOrDeleteSubscriptionSerializer(serializers.ModelSerializer):
 
 
 class SubscribersSerializer(serializers.ModelSerializer):
-    user = ShortUserSerializer(read_only=True)
+    user = ShortBazhayUserSerializer(read_only=True)
 
     class Meta:
         model = Subscription
@@ -63,7 +63,7 @@ class SubscribersSerializer(serializers.ModelSerializer):
 
 
 class SubscriptionsSerializer(serializers.ModelSerializer):
-    subscribed_to = ShortUserSerializer(read_only=True)
+    subscribed_to = ShortBazhayUserSerializer(read_only=True)
 
     class Meta:
         model = Subscription

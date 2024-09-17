@@ -1,11 +1,13 @@
 from django.core.cache import cache
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
+
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import BazhayUser
 from .authentication import IgnoreInvalidTokenAuthentication
@@ -17,8 +19,11 @@ from .serializers import (CreateUserSerializer,
                           GuestUserSerializer,
                           ConvertGuestUserSerializer,
                           UpdateUserPhotoSerializer,
-                          GoogleAuthSerializer)
+                          GoogleAuthSerializer,
+                          ShortBazhayUserSerializer)
 from .utils import save_and_send_confirmation_code
+from .pagination import BazhayUserPagination
+from .filters import BazhayUserFilter
 
 from permission.permissions import (IsRegisteredUser,
                                     IsRegisteredUserOrReadOnly)
@@ -157,3 +162,16 @@ class GoogleLoginView(mixins.CreateModelMixin, viewsets.GenericViewSet):
                 'refresh': str(refresh)
             }
             return Response(data, status=status.HTTP_200_OK)
+
+
+class ListUserViewSet(viewsets.ReadOnlyModelViewSet):
+    """Return yser list view set"""
+    serializer_class = ShortBazhayUserSerializer
+    queryset = BazhayUser.objects.all()
+    permission_classes = [IsAuthenticated]
+    pagination_class = BazhayUserPagination
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = BazhayUserFilter
+
+    def get_queryset(self):
+        return self.queryset.exclude(id=self.request.user.id)
