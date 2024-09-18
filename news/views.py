@@ -17,10 +17,14 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
     pagination_class = PageNumberPagination
 
-    @action(detail=True, methods=['get'], url_path='wish', pagination_class=PageNumberPagination)
-    def paginated_abilities(self, request: Request, slug: Optional[str] = None) -> Response:
+    @action(detail=True, methods=['get'], url_path='wish')
+    def wishes(self, request: Request, slug: Optional[str] = None) -> Response:
         """Returns the paginated wish list of the original brand"""
         news = self.get_object()
         wish = news.wishes.all()
-        serializer = WishSerializerForNotUser(wish, many=True)
-        return Response(serializer.data)
+
+        paginator = PageNumberPagination()
+        result_page = paginator.paginate_queryset(wish, request)
+
+        serializer = WishSerializerForNotUser(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
