@@ -11,7 +11,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Wish, Reservation
 from .serializers import WishSerializer, ReservationSerializer, VideoSerializer, WishSerializerForNotUser
 from .filters import WishFilter
-from .pagination import WishPagination
+from rest_framework.pagination import PageNumberPagination
 
 from subscription.models import Subscription
 
@@ -47,7 +47,7 @@ class WishViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = WishFilter
-    pagination_class = WishPagination
+    pagination_class = PageNumberPagination
 
     def get_queryset(self) -> QuerySet:
         """
@@ -109,7 +109,6 @@ class WishViewSet(viewsets.ModelViewSet):
         return super().retrieve(request, *args, **kwargs)
 
 
-
 class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet for retrieving wishes with filtering and pagination.
@@ -123,7 +122,7 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = WishFilter
-    pagination_class = WishPagination
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         """
