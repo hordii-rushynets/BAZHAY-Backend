@@ -83,20 +83,6 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
         )
         return queryset.exclude(author=self.request.user).distinct()
 
-    @action(detail=False, methods=['get'], url_path='(?P<user_id>\d+)')
-    def user_wish(self, request: Request, user_id=None, *args, **kwargs):
-        queryset = self.get_queryset().filter(author_id=user_id)
-        return self.__paginate_and_respond(queryset)
-
-    def __paginate_and_respond(self, queryset):
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
 
 class ReservationViewSet(viewsets.ModelViewSet):
     queryset = Reservation.objects.all()

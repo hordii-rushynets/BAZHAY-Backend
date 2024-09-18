@@ -189,7 +189,7 @@ class GoogleAuthSerializer(serializers.ModelSerializer):
             )
             return user
         except Exception:
-            raise serializers.ValidationError({'error': 'Something went wrong'})
+            raise serializers.ValidationError(detail='Something went wrong')
 
 
 class ShortBazhayUserSerializer(serializers.ModelSerializer):

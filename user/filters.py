@@ -33,13 +33,8 @@ class BazhayUserFilter(django_filters.FilterSet):
         first_name = self.data.get('first_name', None)
         last_name = self.data.get('last_name', None)
 
-        query = Q()
+        queryset = queryset.filter(Q(usernameicontains=username, usernameisnull=False) |
+                                   Q(first_name__icontains=first_name, first_name__isnull=False) |
+                                   Q(last_name__icontains=last_name, last_name__isnull=False))
 
-        if username:
-            query |= Q(username__icontains=username)
-        if first_name:
-            query |= Q(first_name__icontains=first_name)
-        if last_name:
-            query |= Q(last_name__icontains=last_name)
-
-        return queryset.filter(query)
+        return queryset

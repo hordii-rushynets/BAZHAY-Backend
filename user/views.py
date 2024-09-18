@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
+from rest_framework.pagination import PageNumberPagination
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -22,7 +23,6 @@ from .serializers import (CreateUserSerializer,
                           GoogleAuthSerializer,
                           ShortBazhayUserSerializer)
 from .utils import save_and_send_confirmation_code
-from .pagination import BazhayUserPagination
 from .filters import BazhayUserFilter
 
 from permission.permissions import (IsRegisteredUser,
@@ -169,14 +169,17 @@ class ListUserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ShortBazhayUserSerializer
     queryset = BazhayUser.objects.all()
     permission_classes = [IsAuthenticated]
-    pagination_class = BazhayUserPagination
+    pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = BazhayUserFilter
 
+    def get_serializer_class(self):
+        serializers = {
+            'list': ShortBazhayUserSerializer,
+            'retrieve': UpdateUserSerializers
+        }
+
+        return serializers.get(self.action, ShortBazhayUserSerializer)
+
     def get_queryset(self):
         return self.queryset.exclude(id=self.request.user.id)
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = UpdateUserSerializers(instance, context={'request': request})
-        return Response(serializer.data)
