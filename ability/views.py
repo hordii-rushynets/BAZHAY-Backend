@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
+from rest_framework.decorators import action
 
 from django.db.models.query import QuerySet
 from django.db.models import Q
@@ -14,15 +15,6 @@ from .filters import WishFilter
 from .pagination import WishPagination
 
 from subscription.models import Subscription
-
-
-def get_visible_abilities(user):
-    """Checks access to the wish"""
-    return Wish.objects.filter(
-        Q(access_type='everyone') |
-        Q(author=user) |
-        Q(access_type='subscribers', author__subscriptions__user=user)
-    ).distinct()
 
 
 def can_view_ability(user, ability):
@@ -89,14 +81,19 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
             Q(access_type='subscribers',
               author__in=Subscription.objects.filter(user=user).values_list('subscribed_to', flat=True))
         )
-        return queryset
+        return queryset.exclude(author=self.request.user).distinct()
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().exclude(author=self.request.user).distinct()
+    @action(detail=False, methods=['get'], url_path='(?P<user_id>\d+)')
+    def user_wish(self, request: Request, user_id=None, *args, **kwargs):
+        queryset = self.get_queryset().filter(author_id=user_id)
+        return self.__paginate_and_respond(queryset)
+
+    def __paginate_and_respond(self, queryset):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
