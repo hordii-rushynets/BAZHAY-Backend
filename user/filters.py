@@ -24,17 +24,20 @@ class BazhayUserFilter(django_filters.FilterSet):
     def filter_queryset(self, queryset: QuerySet) -> QuerySet:
         """
         Filters and sorts the dataset based on matches in the fields username, first_name, last_name.
-
         Only applies the filter if the value is provided.
-
         Returns: QuerySet: The filtered and sorted data set, where users with more matches are displayed first.
         """
         username = self.data.get('username', None)
         first_name = self.data.get('first_name', None)
         last_name = self.data.get('last_name', None)
 
-        queryset = queryset.filter(Q(usernameicontains=username, usernameisnull=False) |
-                                   Q(first_name__icontains=first_name, first_name__isnull=False) |
-                                   Q(last_name__icontains=last_name, last_name__isnull=False))
+        query = Q()
 
-        return queryset
+        if username:
+            query |= Q(username__icontains=username)
+        if first_name:
+            query |= Q(first_name__icontains=first_name)
+        if last_name:
+            query |= Q(last_name__icontains=last_name)
+
+        return queryset.filter(query)
