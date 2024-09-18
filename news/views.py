@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from ability.pagination import WishPagination
 from ability.serializers import WishSerializerForNotUser
@@ -16,6 +17,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = News.objects.all().order_by('-priority')  # Sort by priority (from highest to lowest)
     serializer_class = NewsSerializers
     lookup_field = 'slug'
+    pagination_class = PageNumberPagination
 
     @action(detail=True, methods=['get'], url_path='wish')
     def paginated_abilities(self, request: Request, slug: Optional[str] = None) -> Response:
