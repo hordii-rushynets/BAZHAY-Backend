@@ -146,7 +146,23 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
             Q(access_type='subscribers',
               author__in=Subscription.objects.filter(user=user).values_list('subscribed_to', flat=True))
         )
-        return queryset.exclude(author=user).distinct()
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        """
+        List wishes excluding those authored by the requesting user.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset = queryset.exclude(author=request.user)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
 
 
 class ReservationViewSet(viewsets.ModelViewSet):
@@ -176,7 +192,6 @@ class ReservationViewSet(viewsets.ModelViewSet):
         """
         bazhay_user = self.request.user
         return super().get_queryset().filter(bazhay_user=bazhay_user)
-
 
 
 class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
