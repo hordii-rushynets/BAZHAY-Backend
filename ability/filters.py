@@ -1,14 +1,29 @@
 import django_filters
+from django.db.models import F, Case, When, ExpressionWrapper, FloatField
 from .models import Wish
 from .services import CurrencyService
-from django.db.models import F, Case, When, ExpressionWrapper, FloatField
 
 
 class PriceOrderingFilter(django_filters.OrderingFilter):
-    def filter(self, qs, value):
-        currency_service: CurrencyService = CurrencyService()
+    """
+    Custom filter to order Wish queryset by price converted to USD.
 
-        exchange_rates = currency_service.get_exchange_rates(base_currency='USD') 
+    This filter annotates the queryset with a price in USD based on the provided exchange rates and orders the results accordingly.
+    """
+
+    def filter(self, qs, value):
+        """
+        Annotates the queryset with the price in USD and orders by this annotated price.
+
+        Args:
+            qs (django.db.models.QuerySet): The queryset to filter.
+            value (str): The ordering criteria.
+
+        Returns:
+            django.db.models.QuerySet: The filtered and ordered queryset.
+        """
+        currency_service: CurrencyService = CurrencyService()
+        exchange_rates = currency_service.get_exchange_rates(base_currency='USD')
 
         return qs.annotate(
             price_in_usd=Case(
@@ -31,9 +46,15 @@ class PriceOrderingFilter(django_filters.OrderingFilter):
 
 
 class WishFilter(django_filters.FilterSet):
+    """
+    FilterSet for the Wish model.
+
+    Provides filters for `is_fully_created`, `price`, `created`, `access`, `brand`, and `user`.
+    """
+
     is_fully_created = django_filters.BooleanFilter(field_name='is_fully_created')
-    price = PriceOrderingFilter(fields=[('price', 'min'), ('-price', 'max'),])
-    created = django_filters.OrderingFilter(fields=[('created_at', 'faster'), ('-created_at', 'later'),])
+    price = PriceOrderingFilter(fields=[('price', 'min'), ('-price', 'max')])
+    created = django_filters.OrderingFilter(fields=[('created_at', 'faster'), ('-created_at', 'later')])
     access = django_filters.CharFilter(field_name='access_type')
     brand = django_filters.CharFilter(field_name='brand_author__slug')
     user = django_filters.NumberFilter(field_name='author__id')
