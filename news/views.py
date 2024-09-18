@@ -5,8 +5,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-
-from ability.pagination import WishPagination
 from ability.serializers import WishSerializerForNotUser
 
 from .serializers import NewsSerializers, News
@@ -19,17 +17,10 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = 'slug'
     pagination_class = PageNumberPagination
 
-    @action(detail=True, methods=['get'], url_path='wish')
+    @action(detail=True, methods=['get'], url_path='wish', pagination_class=PageNumberPagination)
     def paginated_abilities(self, request: Request, slug: Optional[str] = None) -> Response:
         """Returns the paginated wish list of the original brand"""
         news = self.get_object()
         wish = news.wishes.all()
-        paginator = WishPagination()
-        page = paginator.paginate_queryset(wish, request)
-
-        if page is not None:
-            serializer = WishSerializerForNotUser(page, many=True)
-            return paginator.get_paginated_response(serializer.data)
-
         serializer = WishSerializerForNotUser(wish, many=True)
         return Response(serializer.data)
