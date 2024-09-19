@@ -9,7 +9,7 @@ from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Wish, Reservation
-from .serializers import WishSerializer, ReservationSerializer, VideoSerializer, WishSerializerForNotUser
+from .serializers import WishSerializer, ReservationSerializer, VideoSerializer
 from .filters import WishFilter
 from rest_framework.pagination import PageNumberPagination
 
@@ -149,20 +149,8 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
     def list(self, request, *args, **kwargs):
-        """
-        List wishes excluding those authored by the requesting user.
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-        queryset = queryset.exclude(author=request.user)
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
+        self.queryset.exclude(author=self.request.user)
+        return super().list(request, *args, **kwargs)
 
 
 class ReservationViewSet(viewsets.ModelViewSet):
