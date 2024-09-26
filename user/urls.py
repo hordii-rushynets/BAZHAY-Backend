@@ -7,7 +7,8 @@ from .views import (AuthViewSet,
                     UpdateUserViewSet,
                     UpdateUserEmailViewSet,
                     GuestUserViewSet,
-                    UpdateUserPhotoViewSet)
+                    UpdateUserPhotoViewSet,
+                    GoogleLoginView)
 
 
 router = DefaultRouter()
@@ -20,5 +21,5 @@ urlpatterns = router.urls + [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', TokenBlacklistView.as_view(), name='logout'),
     path('user/photo/', UpdateUserPhotoViewSet.as_view({'put': 'update'})),
-
+    path('auth/google/', GoogleLoginView.as_view(), name='google_auth'),
 ]
