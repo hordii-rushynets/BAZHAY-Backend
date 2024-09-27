@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'channels',
 
     'modeltranslation',
 
@@ -94,7 +95,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend.wsgi.application'
-
+#ASGI_APPLICATION = 'backend.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -252,3 +253,19 @@ LANGUAGES = (
 )
 
 MODELTRANSLATION_DEFAULT_LANGUAGE = 'en'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [
+                {
+                    "address": f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0",
+                    # Format: redis://:password@host:port/db_number
+                    # "address": ("127.0.0.1", 6379), # Alternatively, if no password
+                    "password": f"{REDIS_PASSWORD}",  # Optional if password included in URL
+                }
+            ],
+        },
+    },
+}

@@ -1,33 +1,24 @@
 from celery import shared_task
-from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from django.utils import timezone
+import json
 
 
 @shared_task
-def send_notification(notification_id):
-    from .models import Notification
-
+def send_notification_task(notification_id):
     try:
+        from .models import Notification
         notification = Notification.objects.get(id=notification_id)
-
-        notification_data = {
-            'id': notification.id,
-            'title': notification.title,
-            'message': notification.message,
-            'sent_time': notification.send_time.isoformat(),
-        }
-
-        channel_layer = get_channel_layer()
-
-        async_to_sync(channel_layer.group_send)(
-            "notifications",
-            {
-                "type": "send.notification",
-                "notification": notification_data
-            }
-        )
-        notification.is_sent = True
-        notification.save()
-
+        if notification.send_at <= timezone.now():
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                'notifications_group',
+                {
+                    'type': 'send_notification',
+                    'message': notification.message
+                }
+            )
+            notification.delete()
     except Notification.DoesNotExist:
-        print(f"Notification with id {notification_id} does not exist.")
+        pass

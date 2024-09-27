@@ -20,5 +20,4 @@ urlpatterns = router.urls + [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', TokenBlacklistView.as_view(), name='logout'),
     path('user/photo/', UpdateUserPhotoViewSet.as_view({'put': 'update'})),
-
 ]
