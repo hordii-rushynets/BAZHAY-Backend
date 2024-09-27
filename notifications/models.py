@@ -8,7 +8,7 @@ from .tasks import send_notification_task
 
 class Notification(models.Model):
     message = models.TextField()
-    send_at = models.DateTimeField(blank=True, null=True, default=timezone.now())
+    send_at = models.DateTimeField(default=timezone.now())
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
