@@ -311,15 +311,15 @@ class WishSerializerForNotUser(serializers.ModelSerializer):
 
 
 class CombinedSearchSerializer(serializers.Serializer):
+    """
+    Serializer to combine results from Wish and BazhayUser models.
+
+    :param wishes: List of serialized wishes.
+    :param users: List of serialized users.
+    """
     wishes = WishSerializer(many=True, read_only=True)
     users = ReturnBazhayUserSerializer(many=True, read_only=True)
 
     class Meta:
         fields = ['wishes', 'users']
-
-    def to_representation(self, instance):
-        return {
-            'wishes': WishSerializer(instance['wishes'], many=True, context=self.context).data,
-            'users': ReturnBazhayUserSerializer(instance['users'], many=True, context=self.context).data
-        }
 

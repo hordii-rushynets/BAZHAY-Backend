@@ -203,19 +203,43 @@ class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
 
 
 class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
+    """
+    View for searching across BazhayUser and Wish models.
+
+    :param request: DRF request object.
+    :param args: Additional positional arguments.
+    :param kwargs: Additional keyword arguments.
+
+    :return: Response object containing serialized data if a query is provided,
+    or an error response if no query is present.
+    """
     serializer_class = CombinedSearchSerializer
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args, **kwargs) -> Response:
+        """
+        Handle GET requests to search across users and wishes
+
+        :param request: DRF request object containing search query
+
+        :return: Response with serialized search results or an error message if no query is provided.
+        """
         query = request.query_params.get('query', None)
 
         if query:
-            results = self.get_queryset(query)
-            serializer = self.get_serializer(instance=results, context={'request': request})
+            querysets = self.get_queryset(query)
+            serializer = self.get_serializer(querysets, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response({"detail": "No query provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-    def get_queryset(self, query):
+    def get_queryset(self, query: str) -> dict:
+        """
+        Retrieve querysets based on the search query from the BazhayUser and Wish models.
+
+        :param query: The search term.
+
+        :return: A dictionary containing querysets for both users and wishes filtered by the search term.
+        """
         bazhay_user_results = BazhayUser.objects.filter(
             Q(email__icontains=query) | Q(username__icontains=query) | Q(about_user__icontains=query)
         ).exclude(email=self.request.user.email)
