@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from .models import Subscription
-from user.serializers import UpdateUserSerializers
+from user.serializers import ReturnBazhayUserSerializer
 from user.models import BazhayUser
 
 
-class SubscriptionSerializer(serializers.ModelSerializer):
+class CreateOrDeleteSubscriptionSerializer(serializers.ModelSerializer):
     """Subscription serializer"""
-    user = UpdateUserSerializers(read_only=True)
-    subscribed_to = UpdateUserSerializers(read_only=True)
+    user = ReturnBazhayUserSerializer(read_only=True)
+    subscribed_to = ReturnBazhayUserSerializer(read_only=True)
     subscribed_to_id = serializers.IntegerField(write_only=True)
 
     class Meta:
@@ -52,3 +52,20 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
         subscription.delete()
         return subscription
+
+
+class SubscribersSerializer(serializers.ModelSerializer):
+    user = ReturnBazhayUserSerializer(read_only=True)
+
+    class Meta:
+        model = Subscription
+        fields = ['id', 'user']
+
+
+class SubscriptionsSerializer(serializers.ModelSerializer):
+    subscribed_to = ReturnBazhayUserSerializer(read_only=True)
+
+    class Meta:
+        model = Subscription
+        fields = ['id', 'subscribed_to']
+
