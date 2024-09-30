@@ -119,7 +119,6 @@ class WishSerializer(serializers.ModelSerializer):
         return obj.author == self.context['request'].user
 
 
-
 class ReservationSerializer(serializers.Serializer):
     """
     Serializer for creating and validating reservations for wishes.
@@ -277,7 +276,6 @@ class VideoSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
-
 
 
 class WishSerializerForNotUser(serializers.ModelSerializer):
