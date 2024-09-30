@@ -3,17 +3,19 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
+from rest_framework import status
 
 from django.db.models.query import QuerySet
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Wish, Reservation
-from .serializers import WishSerializer, ReservationSerializer, VideoSerializer
+from .serializers import WishSerializer, ReservationSerializer, VideoSerializer, CombinedSearchSerializer
 from .filters import WishFilter
 from rest_framework.pagination import PageNumberPagination
 
 from subscription.models import Subscription
+from user.serializers import BazhayUser, ReturnBazhayUserSerializer
 
 
 def can_view_ability(user, ability):
@@ -199,3 +201,37 @@ class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
     serializer_class = VideoSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+
+class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
+    serializer_class = CombinedSearchSerializer
+
+    def list(self, request, *args, **kwargs):
+        query = request.query_params.get('query', None)
+
+        if query:
+            results = self.get_queryset(query)
+            serializer = self.get_serializer(instance=results, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response({"detail": "No query provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_queryset(self, query):
+        bazhay_user_results = BazhayUser.objects.filter(
+            Q(email__icontains=query) | Q(username__icontains=query) | Q(about_user__icontains=query)
+        ).exclude(email=self.request.user.email)
+
+        wish_results = Wish.objects.filter(
+            Q(name__icontains=query)
+            | Q(description__icontains=query)
+            | Q(additional_description__icontains=query)
+            | Q(author__username__icontains=query)
+            | Q(brand_author__name__icontains=query)
+            | Q(brand_author__nickname__icontains=query)
+            | Q(news_author__title__icontains=query)
+            | Q(news_author__description__icontains=query)
+        ).exclude(author=self.request.user)
+
+        return {
+            'users': bazhay_user_results,
+            'wishes': wish_results
+        }

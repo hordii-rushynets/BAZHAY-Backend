@@ -1,11 +1,12 @@
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
+from django.db.models import Q
 
 from rest_framework import serializers
 
 from .models import Wish, Reservation
 
-from user.serializers import ReturnBazhayUserSerializer
+from user.serializers import ReturnBazhayUserSerializer, BazhayUser
 from brand.serializers import BrandSerializer
 from moviepy.editor import VideoFileClip
 from news.serializers import NewsSerializers
@@ -307,3 +308,18 @@ class WishSerializerForNotUser(serializers.ModelSerializer):
         model = Wish
         fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
                   'additional_description', 'currency', 'created_at', 'image_size']
+
+
+class CombinedSearchSerializer(serializers.Serializer):
+    wishes = WishSerializer(many=True, read_only=True)
+    users = ReturnBazhayUserSerializer(many=True, read_only=True)
+
+    class Meta:
+        fields = ['wishes', 'users']
+
+    def to_representation(self, instance):
+        return {
+            'wishes': WishSerializer(instance['wishes'], many=True, context=self.context).data,
+            'users': ReturnBazhayUserSerializer(instance['users'], many=True, context=self.context).data
+        }
+
