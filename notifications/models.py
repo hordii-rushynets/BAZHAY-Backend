@@ -6,7 +6,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 from .tasks import send_notification_task
-from .message_text import welcome_message
+from .message_text import welcome_message_uk, welcome_message_en
 
 from user.models import BazhayUser
 
@@ -37,6 +37,9 @@ def send_welcome_notification(sender, instance, created, **kwargs):
             f"user_{instance.id}",
             {
                 'type': 'send_notification',
-                'message': welcome_message
+                'message': {
+                    'welcome_message_uk': welcome_message_uk,
+                    'welcome_message_en': welcome_message_en
+                    }
             }
         )
