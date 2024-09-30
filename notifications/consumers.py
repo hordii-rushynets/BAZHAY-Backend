@@ -4,17 +4,30 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.group_name = 'notifications_group'
+        self.user = self.scope['user']
+        self.notifications_group = 'notifications_group'
+        self.personal_group = f"user_{self.user.id}"
 
         await self.channel_layer.group_add(
-            self.group_name,
+            self.notifications_group,
             self.channel_name
         )
+
+        await self.channel_layer.group_add(
+            self.personal_group,
+            self.channel_name
+        )
+
         await self.accept()
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
-            self.group_name,
+            self.notifications_group,
+            self.channel_name
+        )
+
+        await self.channel_layer.group_discard(
+            self.personal_group,
             self.channel_name
         )
 
@@ -23,7 +36,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         message = data['message']
 
         await self.channel_layer.group_send(
-            self.group_name,
+            self.notifications_group,
             {
                 'type': 'send_notification',
                 'message': message
@@ -35,4 +48,3 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'message': message
         }))
-

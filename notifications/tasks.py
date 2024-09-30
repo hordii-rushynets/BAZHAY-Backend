@@ -19,6 +19,5 @@ def send_notification_task(notification_id):
                     'message': notification.message
                 }
             )
-            notification.delete()
     except Notification.DoesNotExist:
         pass

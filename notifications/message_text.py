@@ -1,0 +1,1 @@
+welcome_message = f"Привіт, раді вітати Тебе у Bazhay!"
