@@ -9,7 +9,7 @@ from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Wish, Reservation
-from .serializers import WishSerializer, ReservationSerializer, VideoSerializer, WishSerializerForNotUser
+from .serializers import WishSerializer, ReservationSerializer, VideoSerializer
 from .filters import WishFilter
 from rest_framework.pagination import PageNumberPagination
 
@@ -146,7 +146,11 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
             Q(access_type='subscribers',
               author__in=Subscription.objects.filter(user=user).values_list('subscribed_to', flat=True))
         )
-        return queryset.exclude(author=user).distinct()
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        self.queryset.exclude(author=self.request.user)
+        return super().list(request, *args, **kwargs)
 
 
 class ReservationViewSet(viewsets.ModelViewSet):
@@ -176,7 +180,6 @@ class ReservationViewSet(viewsets.ModelViewSet):
         """
         bazhay_user = self.request.user
         return super().get_queryset().filter(bazhay_user=bazhay_user)
-
 
 
 class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
