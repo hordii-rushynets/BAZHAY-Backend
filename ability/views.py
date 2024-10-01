@@ -4,7 +4,9 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
 from rest_framework import status
+from rest_framework.decorators import action
 
+from django.core.cache import cache
 from django.db.models.query import QuerySet
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
@@ -17,6 +19,8 @@ from rest_framework.pagination import PageNumberPagination
 from subscription.models import Subscription
 from user.models import BazhayUser
 from brand.models import Brand
+
+SECONDS_IN_A_DAY = 86400
 
 
 def can_view_ability(user, ability):
@@ -155,6 +159,25 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
         self.queryset.exclude(author=self.request.user)
         return super().list(request, *args, **kwargs)
 
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def view(self, request, pk=None):
+        wish = self.get_object()
+
+        if wish.author == request.user:
+            return Response({'message': 'You cannot view your own wish.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        cache_key = f"user:{request.user.id}:viewed_wish:{wish.id}"
+
+        if cache.get(cache_key):
+            return Response(status=status.HTTP_200_OK)
+
+        cache.set(cache_key, True, timeout=7 * SECONDS_IN_A_DAY)
+
+        wish.views_number += 1
+        wish.save()
+
+        return Response(status=status.HTTP_200_OK)
+
 
 class ReservationViewSet(viewsets.ModelViewSet):
     """
@@ -260,3 +283,5 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
             'wishes': wish_results,
             'brands': brand_results,
         }
+
+
