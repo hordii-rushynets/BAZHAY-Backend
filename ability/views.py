@@ -208,6 +208,7 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
     View for searching across BazhayUser, Wish abd Brand models.
     """
     serializer_class = CombinedSearchSerializer
+    pagination_class = [permissions.IsAuthenticated]
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         """
