@@ -6,7 +6,7 @@ from rest_framework.request import Request
 from rest_framework import status
 
 from django.db.models.query import QuerySet
-from django.db.models import Q
+from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Wish, Reservation
@@ -15,7 +15,8 @@ from .filters import WishFilter
 from rest_framework.pagination import PageNumberPagination
 
 from subscription.models import Subscription
-from user.serializers import BazhayUser, ReturnBazhayUserSerializer
+from user.models import BazhayUser
+from brand.models import Brand
 
 
 def can_view_ability(user, ability):
@@ -204,14 +205,7 @@ class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
 
 class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
     """
-    View for searching across BazhayUser and Wish models.
-
-    :param request: DRF request object.
-    :param args: Additional positional arguments.
-    :param kwargs: Additional keyword arguments.
-
-    :return: Response object containing serialized data if a query is provided,
-    or an error response if no query is present.
+    View for searching across BazhayUser, Wish abd Brand models.
     """
     serializer_class = CombinedSearchSerializer
 
@@ -234,7 +228,7 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
 
     def get_queryset(self, query: str) -> dict:
         """
-        Retrieve querysets based on the search query from the BazhayUser and Wish models.
+        Retrieve querysets based on the search query from the BazhayUser, Wish and Brand models.
 
         :param query: The search term.
 
@@ -242,7 +236,7 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
         """
         bazhay_user_results = BazhayUser.objects.filter(
             Q(email__icontains=query) | Q(username__icontains=query) | Q(about_user__icontains=query)
-        ).exclude(email=self.request.user.email)
+        ).exclude(email=self.request.user.email).annotate(subscriber_count=Count('subscribers')).order_by('-subscriber_count')
 
         wish_results = Wish.objects.filter(
             Q(name__icontains=query)
@@ -255,7 +249,13 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
             | Q(news_author__description__icontains=query)
         ).exclude(author=self.request.user)
 
+        brand_results = Brand.objects.filter(Q(name__icontains=query)
+                                             | Q(name__icontains=query)
+                                             | Q(nickname__icontains=query)
+                                             | Q(description__icontains=query))
+
         return {
             'users': bazhay_user_results,
-            'wishes': wish_results
+            'wishes': wish_results,
+            'brands': brand_results,
         }

@@ -1,12 +1,11 @@
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.db.models import Q
 
 from rest_framework import serializers
 
 from .models import Wish, Reservation
 
-from user.serializers import ReturnBazhayUserSerializer, BazhayUser
+from user.serializers import ReturnBazhayUserSerializer
 from brand.serializers import BrandSerializer
 from moviepy.editor import VideoFileClip
 from news.serializers import NewsSerializers
@@ -312,14 +311,12 @@ class WishSerializerForNotUser(serializers.ModelSerializer):
 
 class CombinedSearchSerializer(serializers.Serializer):
     """
-    Serializer to combine results from Wish and BazhayUser models.
-
-    :param wishes: List of serialized wishes.
-    :param users: List of serialized users.
+    Serializer to combine results from Wish, BazhayUser and Brand models.
     """
     wishes = WishSerializer(many=True, read_only=True)
     users = ReturnBazhayUserSerializer(many=True, read_only=True)
+    brands = BrandSerializer(many=True, read_only=True)
 
     class Meta:
-        fields = ['wishes', 'users']
+        fields = ['wishes', 'users', 'brands']
 

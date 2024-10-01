@@ -440,26 +440,18 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
     Serializer for the BazhayUser model to return user information including
     whether the requesting user is subscribed to the given user.
 
-    Fields:
-        - id (int): Unique identifier of the user.
-        - photo (str): URL or path to the user's profile photo.
-        - username (str): Username of the user.
-        - first_name (str): First name of the user.
-        - last_name (str): Last name of the user.
-        - is_subscribed (bool): Indicates if the current user is subscribed
-          to the returned user (computed field).
-
     Methods:
         get_is_subscribed(obj: BazhayUser) -> bool:
             Returns a boolean indicating whether the current user
             (from the request context) is subscribed to the provided BazhayUser object.
     """
     is_subscribed = serializers.SerializerMethodField()
+    subscriber = serializers.SerializerMethodField()
 
     class Meta:
         model = BazhayUser
-        fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed']
-        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed']
+        fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber']
+        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber']
 
     def get_is_subscribed(self, obj: BazhayUser) -> bool:
         """
@@ -472,3 +464,9 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
             bool: True if the current user is subscribed to the provided user, False otherwise.
         """
         return Subscription.is_subscribed(self.context['request'].user, obj)
+
+    def get_subscriber(self, obj):
+        """
+        Returns the count of subscribers (the number of users subscribed to the given user).
+        """
+        return obj.subscribers.count()
