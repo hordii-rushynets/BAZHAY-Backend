@@ -6,6 +6,14 @@ from django.utils import timezone
 
 @shared_task
 def send_notification_task(notification_id):
+    """
+    Send a notification to users at the scheduled time.
+
+    Retrieves the notification by its ID and sends it to all associated users
+    via their WebSocket group if the scheduled time has been reached.
+
+    :param notification_id: The ID of the notification to send.
+    """
     from .models import Notification
     try:
         notification = Notification.objects.get(id=notification_id)

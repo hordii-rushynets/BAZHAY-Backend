@@ -3,6 +3,12 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 
 class NotificationConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket consumer for managing user notifications.
+
+    Handles connecting, disconnecting, receiving messages, and sending notifications
+    to users in real-time.
+    """
     async def connect(self):
         self.user = self.scope['user']
         self.notifications_group = 'notifications_group'
@@ -21,6 +27,13 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
+        """
+        Handle the disconnection of a WebSocket client.
+
+        Removes the user from the notifications and personal groups.
+
+        :param close_code: the code indicating the reason for disconnection.
+        """
         await self.channel_layer.group_discard(
             self.notifications_group,
             self.channel_name
@@ -32,6 +45,14 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         )
 
     async def receive(self, text_data):
+        """
+        Receive a message from the WebSocket.
+
+        Sends the received message to the notifications group.
+
+        :param text_data: the received message data as a string.
+        """
+
         data = json.loads(text_data)
         message = data['message']
 
@@ -44,6 +65,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         )
 
     async def send_notification(self, event):
+        """
+        Send a notification to the WebSocket client.
+
+        :param event: the event containing the notification message.
+        """
         message = event['message']
         await self.send(text_data=json.dumps({
             'message': message
