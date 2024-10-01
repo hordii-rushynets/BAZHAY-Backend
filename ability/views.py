@@ -3,17 +3,20 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
+from rest_framework import status
 
 from django.db.models.query import QuerySet
-from django.db.models import Q
+from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Wish, Reservation
-from .serializers import WishSerializer, ReservationSerializer, VideoSerializer
+from .serializers import WishSerializer, ReservationSerializer, VideoSerializer, CombinedSearchSerializer
 from .filters import WishFilter
 from rest_framework.pagination import PageNumberPagination
 
 from subscription.models import Subscription
+from user.models import BazhayUser
+from brand.models import Brand
 
 
 def can_view_ability(user, ability):
@@ -199,3 +202,61 @@ class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
     serializer_class = VideoSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+
+class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
+    """
+    View for searching across BazhayUser, Wish abd Brand models.
+    """
+    serializer_class = CombinedSearchSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request: Request, *args, **kwargs) -> Response:
+        """
+        Handle GET requests to search across users and wishes
+
+        :param request: DRF request object containing search query.
+
+        :return: Response with serialized search results or an error message if no query is provided.
+        """
+        query = request.query_params.get('query', None)
+
+        if query:
+            querysets = self.get_queryset(query)
+            serializer = self.get_serializer(querysets, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response({"detail": "No query provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_queryset(self, query: str) -> dict:
+        """
+        Retrieve querysets based on the search query from the BazhayUser, Wish and Brand models.
+
+        :param query: The search term.
+
+        :return: A dictionary containing querysets for both users and wishes filtered by the search term.
+        """
+        bazhay_user_results = BazhayUser.objects.filter(
+            Q(email__icontains=query) | Q(username__icontains=query) | Q(about_user__icontains=query)
+        ).exclude(email=self.request.user.email).exclude(is_superuser=True).annotate(subscriber_count=Count('subscribers')).order_by('-subscriber_count')
+
+        wish_results = Wish.objects.filter(
+            Q(name__icontains=query)
+            | Q(description__icontains=query)
+            | Q(additional_description__icontains=query)
+            | Q(author__username__icontains=query)
+            | Q(brand_author__name__icontains=query)
+            | Q(brand_author__nickname__icontains=query)
+            | Q(news_author__title__icontains=query)
+            | Q(news_author__description__icontains=query)
+        ).exclude(author=self.request.user)
+
+        brand_results = Brand.objects.filter(Q(name__icontains=query)
+                                             | Q(name__icontains=query)
+                                             | Q(nickname__icontains=query)
+                                             | Q(description__icontains=query))
+
+        return {
+            'users': bazhay_user_results,
+            'wishes': wish_results,
+            'brands': brand_results,
+        }

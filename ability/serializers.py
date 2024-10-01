@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
+from django.db.models import Q
 
 from rest_framework import serializers
 
@@ -117,7 +118,6 @@ class WishSerializer(serializers.ModelSerializer):
             bool: True if the wish belongs to the requesting user, otherwise False.
         """
         return obj.author == self.context['request'].user
-
 
 
 class ReservationSerializer(serializers.Serializer):
@@ -279,7 +279,6 @@ class VideoSerializer(serializers.ModelSerializer):
         return instance
 
 
-
 class WishSerializerForNotUser(serializers.ModelSerializer):
     """
     Serializer for the Wish model to handle serialization and deserialization of wish objects.
@@ -309,3 +308,16 @@ class WishSerializerForNotUser(serializers.ModelSerializer):
         model = Wish
         fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
                   'additional_description', 'currency', 'created_at', 'image_size']
+
+
+class CombinedSearchSerializer(serializers.Serializer):
+    """
+    Serializer to combine results from Wish, BazhayUser and Brand models.
+    """
+    wishes = WishSerializer(many=True, read_only=True)
+    users = ReturnBazhayUserSerializer(many=True, read_only=True)
+    brands = BrandSerializer(many=True, read_only=True)
+
+    class Meta:
+        fields = ['wishes', 'users', 'brands']
+
