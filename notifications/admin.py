@@ -6,5 +6,8 @@ from .models import Notification
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ['message', 'send_at', 'created_at']
     ordering = ['send_at']
+    filter_horizontal = ('users',)
+
+
 
 
