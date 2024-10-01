@@ -271,12 +271,12 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
             | Q(brand_author__nickname__icontains=query)
             | Q(news_author__title__icontains=query)
             | Q(news_author__description__icontains=query)
-        ).exclude(author=self.request.user)
+        ).exclude(author=self.request.user).order_by('-views_number')
 
         brand_results = Brand.objects.filter(Q(name__icontains=query)
                                              | Q(name__icontains=query)
                                              | Q(nickname__icontains=query)
-                                             | Q(description__icontains=query))
+                                             | Q(description__icontains=query)).order_by('-views_number')
 
         return {
             'users': bazhay_user_results,
