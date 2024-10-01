@@ -214,7 +214,7 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
         """
         Handle GET requests to search across users and wishes
 
-        :param request: DRF request object containing search query
+        :param request: DRF request object containing search query.
 
         :return: Response with serialized search results or an error message if no query is provided.
         """
@@ -237,7 +237,7 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
         """
         bazhay_user_results = BazhayUser.objects.filter(
             Q(email__icontains=query) | Q(username__icontains=query) | Q(about_user__icontains=query)
-        ).exclude(email=self.request.user.email).annotate(subscriber_count=Count('subscribers')).order_by('-subscriber_count')
+        ).exclude(email=self.request.user.email).exclude(is_superuser=True).annotate(subscriber_count=Count('subscribers')).order_by('-subscriber_count')
 
         wish_results = Wish.objects.filter(
             Q(name__icontains=query)

@@ -465,8 +465,11 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
         """
         return Subscription.is_subscribed(self.context['request'].user, obj)
 
-    def get_subscriber(self, obj):
+    def get_subscriber(self, obj: BazhayUser) -> int:
         """
         Returns the count of subscribers (the number of users subscribed to the given user).
+
+        :param obj: BazhayUser object for which the number of subscribers is counted.
+
         """
         return obj.subscribers.count()
