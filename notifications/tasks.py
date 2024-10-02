@@ -7,10 +7,8 @@ from django.utils import timezone
 @shared_task
 def send_notification_task(notification_id):
     """
-    Send a notification to users at the scheduled time.
-
-    Retrieves the notification by its ID and sends it to all associated users
-    via their WebSocket group if the scheduled time has been reached.
+    Send a notification to users at the scheduled time or to a general group
+    if no users are specified.
 
     :param notification_id: The ID of the notification to send.
     """
@@ -19,13 +17,20 @@ def send_notification_task(notification_id):
         notification = Notification.objects.get(id=notification_id)
         if notification.send_at <= timezone.now():
             channel_layer = get_channel_layer()
-            notification_data = {
-                'id': notification.id,
-                'message': notification.message,
-            }
-            for user in notification.users.all():
+            notification_data = notification.message
+
+            if notification.users.exists():
+                for user in notification.users.all():
+                    async_to_sync(channel_layer.group_send)(
+                        f"user_{user.id}",
+                        {
+                            'type': 'send_notification',
+                            'message': notification_data
+                        }
+                    )
+            else:
                 async_to_sync(channel_layer.group_send)(
-                    f"user_{user.id}",
+                    "notifications_group",
                     {
                         'type': 'send_notification',
                         'message': notification_data
@@ -33,5 +38,6 @@ def send_notification_task(notification_id):
                 )
     except Notification.DoesNotExist:
         pass
+
 
 
