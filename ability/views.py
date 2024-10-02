@@ -255,12 +255,7 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
             elif active_fields == 2:
                 self.__querysets_trim(querysets, 8)
             elif active_fields == 1:
-                key = next(iter(querysets))
-                paginated_queryset = self.paginate_queryset(querysets[key])
-
-                if paginated_queryset is not None:
-                    serializer = self.get_serializer({key: paginated_queryset}, context={'request': request})
-                    return self.get_paginated_response(serializer.data)
+                return self.__pagination_one_field(request, querysets)
 
             serializer = self.get_serializer(querysets, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -287,7 +282,7 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         :param queryset (dict): Dictionary where the key is a string and the value is a list.
         :param size (int): The size to which you want to trim.
-        :return: None
+        :return: None.
         """
         for key in queryset.keys():
             queryset[key] = queryset[key][:size]
@@ -335,13 +330,13 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
                   | Q(nickname__icontains=query)
                   | Q(description__icontains=query)).order_by('-views_number')
 
-    def __delete_not_using_fields(self, request: Request, queryset: QuerySet) -> None:
+    def __delete_not_using_fields(self, request: Request, queryset: dict) -> None:
         """
         Removes unnecessary fields from queryset. Changes the one that was transmitted.
 
-        :param request (Request): For information about the required fields
-        :param queryset (Queryset): Queryset that will be changed in the workflow
-        :return: None
+        :param request (Request): For information about the required fields.
+        :param queryset (Queryset): Queryset that will be changed in the workflow.
+        :return: None.
         """
         users = request.query_params.get('users', 'true').lower() == 'false'
         wishes = request.query_params.get('wishes', 'true').lower() == 'false'
@@ -353,3 +348,17 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
             del queryset['wishes']
         if brands:
             del queryset['brands']
+
+    def __pagination_one_field(self, request: Request, queryset: dict) -> Response:
+        """
+        Returns the paginated page.
+
+        :param request (Request): Transferred to the serializer.
+        :paraam queryset (dict): data to be paginated.
+        """
+        key = next(iter(queryset))
+        paginated_queryset = self.paginate_queryset(queryset[key])
+
+        if paginated_queryset is not None:
+            serializer = self.get_serializer({key: paginated_queryset}, context={'request': request})
+            return self.get_paginated_response(serializer.data)
