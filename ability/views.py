@@ -242,9 +242,19 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
         :return: Response with serialized search results or an error message if no query is provided.
         """
         query = request.query_params.get('query', None)
+        users = request.query_params.get('users', 'true').lower() == 'false'
+        wishes = request.query_params.get('wishes', 'true').lower() == 'false'
+        brands = request.query_params.get('brands', 'true').lower() == 'false'
 
         if query:
             querysets = self.get_queryset(query)
+            if users:
+                del querysets['users']
+            if wishes:
+                del querysets['wishes']
+            if brands:
+                del querysets['brands']
+
             serializer = self.get_serializer(querysets, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -259,8 +269,10 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
         :return: A dictionary containing querysets for both users and wishes filtered by the search term.
         """
         bazhay_user_results = BazhayUser.objects.filter(
-            Q(email__icontains=query) | Q(username__icontains=query) | Q(about_user__icontains=query)
-        ).exclude(email=self.request.user.email).exclude(is_superuser=True).annotate(subscriber_count=Count('subscribers')).order_by('-subscriber_count')
+            Q(email__icontains=query)
+            | Q(username__icontains=query)
+            | Q(about_user__icontains=query)).exclude(email=self.request.user.email).exclude(is_superuser=True
+                ).annotate(subscriber_count=Count('subscribers')).order_by('-subscriber_count')
 
         wish_results = Wish.objects.filter(
             Q(name__icontains=query)
@@ -283,5 +295,3 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
             'wishes': wish_results,
             'brands': brand_results,
         }
-
-
