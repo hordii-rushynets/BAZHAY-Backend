@@ -355,6 +355,8 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         :param request (Request): Transferred to the serializer.
         :paraam queryset (dict): data to be paginated.
+
+        :return: paginated Response
         """
         key = next(iter(queryset))
         paginated_queryset = self.paginate_queryset(queryset[key])
