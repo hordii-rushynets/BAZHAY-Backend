@@ -19,7 +19,7 @@ class Notification(models.Model):
     message = models.TextField()
     send_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
-    users = models.ManyToManyField(User, related_name='notifications', blank=True)  # Link to users
+    users = models.ManyToManyField(User, related_name='notifications', blank=True)
 
     def __str__(self):
         return f'Notification: {self.message[:20]} at {self.send_at}'
