@@ -242,26 +242,18 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
         :return: Response with serialized search results or an error message if no query is provided.
         """
         query = request.query_params.get('query', None)
-        users = request.query_params.get('users', 'true').lower() == 'false'
-        wishes = request.query_params.get('wishes', 'true').lower() == 'false'
-        brands = request.query_params.get('brands', 'true').lower() == 'false'
 
         if query:
             querysets = self.get_queryset(query)
 
-            if users:
-                del querysets['users']
-            if wishes:
-                del querysets['wishes']
-            if brands:
-                del querysets['brands']
+            self.__delete_not_using_fields(request, querysets)
 
             active_fields = len(querysets)
 
             if active_fields == 3:
-                self.__querysets_cut(querysets, 5)
+                self.__querysets_trim(querysets, 5)
             elif active_fields == 2:
-                self.__querysets_cut(querysets, 8)
+                self.__querysets_trim(querysets, 8)
             elif active_fields == 1:
                 key = next(iter(querysets))
                 paginated_queryset = self.paginate_queryset(querysets[key])
@@ -275,10 +267,6 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         return Response({"detail": "No query provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-    def __querysets_cut(self, querysets, size):
-        for key in querysets:
-            querysets[key] = querysets[key][:size]
-
     def get_queryset(self, query: str) -> dict:
         """
         Retrieve querysets based on the search query from the BazhayUser, Wish and Brand models.
@@ -287,13 +275,44 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         :return: A dictionary containing querysets for both users and wishes filtered by the search term.
         """
-        bazhay_user_results = BazhayUser.objects.filter(
+        return {
+            'users': self.__get_bazhay_user_results(query),
+            'wishes': self.__get_wish_results(query),
+            'brands': self.__get_brand_results(query),
+        }
+
+    def __querysets_trim(self, queryset: dict, size: int) -> None:
+        """
+        Trims the query to the required length in each key-value pair.
+
+        :param queryset (dict): Dictionary where the key is a string and the value is a list.
+        :param size (int): The size to which you want to trim.
+        :return: None
+        """
+        for key in queryset.keys():
+            queryset[key] = queryset[key][:size]
+
+    def __get_bazhay_user_results(self, query: str | None) -> tuple[BazhayUser]:
+        """
+        Returns a tuple of users.
+
+        :param query (str): Search query.
+        :return: The tuple BazhayUser.
+        """
+        return BazhayUser.objects.filter(
             Q(email__icontains=query)
             | Q(username__icontains=query)
             | Q(about_user__icontains=query)).exclude(email=self.request.user.email).exclude(is_superuser=True
-                ).annotate(subscriber_count=Count('subscribers')).order_by('-subscriber_count')
+            ).annotate(subscriber_count=Count('subscribers')).order_by('-subscriber_count')
 
-        wish_results = Wish.objects.filter(
+    def __get_wish_results(self, query: str | None) -> tuple[Wish]:
+        """
+        Returns a tuple of wishes.
+
+        :param query (str): Search query.
+        :return: The tuple Wish.
+        """
+        return Wish.objects.filter(
             Q(name__icontains=query)
             | Q(description__icontains=query)
             | Q(additional_description__icontains=query)
@@ -304,13 +323,33 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
             | Q(news_author__description__icontains=query)
         ).exclude(author=self.request.user).order_by('-views_number')
 
-        brand_results = Brand.objects.filter(Q(name__icontains=query)
-                                             | Q(name__icontains=query)
-                                             | Q(nickname__icontains=query)
-                                             | Q(description__icontains=query)).order_by('-views_number')
+    def __get_brand_results(self, query: str | None) -> tuple[Brand]:
+        """
+        Returns a tuple of brands.
 
-        return {
-            'users': bazhay_user_results,
-            'wishes': wish_results,
-            'brands': brand_results,
-        }
+        :param query (str): Search query.
+        :return: The tuple Brand.
+        """
+        return Brand.objects.filter(Q(name__icontains=query)
+                  | Q(name__icontains=query)
+                  | Q(nickname__icontains=query)
+                  | Q(description__icontains=query)).order_by('-views_number')
+
+    def __delete_not_using_fields(self, request: Request, queryset: QuerySet) -> None:
+        """
+        Removes unnecessary fields from queryset. Changes the one that was transmitted.
+
+        :param request (Request): For information about the required fields
+        :param queryset (Queryset): Queryset that will be changed in the workflow
+        :return: None
+        """
+        users = request.query_params.get('users', 'true').lower() == 'false'
+        wishes = request.query_params.get('wishes', 'true').lower() == 'false'
+        brands = request.query_params.get('brands', 'true').lower() == 'false'
+
+        if users:
+            del queryset['users']
+        if wishes:
+            del queryset['wishes']
+        if brands:
+            del queryset['brands']
