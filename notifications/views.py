@@ -12,4 +12,4 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return self.queryset.filter(Q(users=user) | Q(users=None)).order_by('-send_at')
+        return self.queryset.filter(Q(users=user) | Q(users=None)).order_by('send_at')
