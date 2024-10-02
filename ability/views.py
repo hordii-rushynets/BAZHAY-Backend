@@ -248,6 +248,7 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         if query:
             querysets = self.get_queryset(query)
+
             if users:
                 del querysets['users']
             if wishes:
@@ -255,10 +256,21 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
             if brands:
                 del querysets['brands']
 
+            active_fields = len(querysets)
+
+            if active_fields == 3:
+                self.__querysets_cut(querysets, 5)
+            elif active_fields == 2:
+                self.__querysets_cut(querysets, 8)
+
             serializer = self.get_serializer(querysets, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response({"detail": "No query provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+    def __querysets_cut(self, querysets, size):
+        for key in querysets:
+            querysets[key] = querysets[key][:size]
 
     def get_queryset(self, query: str) -> dict:
         """
