@@ -228,17 +228,17 @@ class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
 
 class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
     """
-    View for searching across BazhayUser, Wish abd Brand models.
+    View for searching across BazhayUser, Wish, and Brand models.
     """
     serializer_class = CombinedSearchSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = PageNumberPagination
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         """
         Handle GET requests to search across users and wishes
 
         :param request: DRF request object containing search query.
-
         :return: Response with serialized search results or an error message if no query is provided.
         """
         query = request.query_params.get('query', None)
@@ -262,6 +262,13 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
                 self.__querysets_cut(querysets, 5)
             elif active_fields == 2:
                 self.__querysets_cut(querysets, 8)
+            elif active_fields == 1:
+                key = next(iter(querysets))
+                paginated_queryset = self.paginate_queryset(querysets[key])
+
+                if paginated_queryset is not None:
+                    serializer = self.get_serializer({key: paginated_queryset}, context={'request': request})
+                    return self.get_paginated_response(serializer.data)
 
             serializer = self.get_serializer(querysets, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
