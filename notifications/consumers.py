@@ -3,14 +3,13 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 
 class NotificationConsumer(AsyncWebsocketConsumer):
-    """
-    WebSocket consumer for managing user notifications.
-
-    Handles connecting, disconnecting, receiving messages, and sending notifications
-    to users in real-time.
-    """
     async def connect(self):
-        self.user = self.scope['user']
+        self.user = self.scope.get('user')
+
+        if self.user is None:
+            await self.close(code=4001)  # Закриваємо WebSocket якщо користувача немає
+            return
+
         self.notifications_group = 'notifications_group'
         self.personal_group = f"user_{self.user.id}"
 
@@ -54,7 +53,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         """
 
         data = json.loads(text_data)
-        message = data['message']
+        message = data.get('message')
 
         await self.channel_layer.group_send(
             self.notifications_group,

@@ -37,6 +37,7 @@ CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv("CSRF_TRUSTED_ORI
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'rest_framework',
+    'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'channels',
@@ -58,6 +61,7 @@ INSTALLED_APPS = [
     'premium',
     'notifications',
 ]
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -261,9 +265,7 @@ CHANNEL_LAYERS = {
             "hosts": [
                 {
                     "address": f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0",
-                    # Format: redis://:password@host:port/db_number
-                    # "address": ("127.0.0.1", 6379), # Alternatively, if no password
-                    "password": f"{REDIS_PASSWORD}",  # Optional if password included in URL
+                    "password": f"{REDIS_PASSWORD}",
                 }
             ],
         },
