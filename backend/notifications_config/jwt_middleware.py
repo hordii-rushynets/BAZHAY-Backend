@@ -2,6 +2,7 @@ from channels.middleware import BaseMiddleware
 from rest_framework_simplejwt.tokens import AccessToken
 from channels.db import database_sync_to_async
 from user.models import BazhayUser
+from urllib.parse import parse_qs
 
 
 class JWTAuthMiddleware(BaseMiddleware):
@@ -21,12 +22,11 @@ class JWTAuthMiddleware(BaseMiddleware):
         return await super().__call__(scope, receive, send)
 
     def get_token_from_scope(self, scope):
-        headers = dict(scope.get("headers", []))
-        auth_header = headers.get(b'authorization', b'').decode('utf-8')
+        query_string = scope.get('query_string', b'').decode('utf-8')
+        parsed_qs = parse_qs(query_string)
+        token = parsed_qs.get('token', [None])[0]
 
-        if auth_header.startswith('Bearer '):
-            return auth_header.split(' ')[1]
-        return None
+        return token
 
     @database_sync_to_async
     def get_user_from_token(self, token):
