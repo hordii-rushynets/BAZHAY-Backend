@@ -40,30 +40,3 @@ def schedule_notification(sender, instance, created, **kwargs):
     if created:
         delay = (instance.send_at - timezone.now()).total_seconds()
         send_notification_task.apply_async((instance.id,), countdown=delay)
-
-
-@receiver(post_save, sender=User)
-def send_welcome_notification(sender, instance, created, **kwargs):
-    """
-    Send a welcome notification to a new user.
-
-    When a new user is created, it sends a welcome notification to the user's
-    personal WebSocket group.
-
-    :param sender: The model class (User).
-    :param instance: The actual User instance.
-    :param created: Boolean indicating if the User was created.
-    """
-
-    if created:
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"user_{instance.id}",
-            {
-                'type': 'send_notification',
-                'message': {
-                    'welcome_message_uk': welcome_message_uk,
-                    'welcome_message_en': welcome_message_en
-                }
-            }
-        )

@@ -1,5 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from .message_text import welcome_message_uk, welcome_message_en
 
 
 class NotificationConsumer(AsyncWebsocketConsumer):
@@ -7,7 +9,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         self.user = self.scope.get('user')
 
         if self.user is None:
-            await self.close(code=4001)  # Закриваємо WebSocket якщо користувача немає
+            await self.close(code=4001)
             return
 
         self.notifications_group = 'notifications_group'
@@ -25,33 +27,32 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        if not self.user.is_already_registered:
+
+            await self.channel_layer.group_send(
+                self.personal_group,
+                {
+                    'type': 'send_notification',
+                    'message': {
+                        'welcome_message_uk': welcome_message_uk,
+                        'welcome_message_en': welcome_message_en
+                    }
+                }
+            )
+
+            await database_sync_to_async(self.user.save)()
+
     async def disconnect(self, close_code):
-        """
-        Handle the disconnection of a WebSocket client.
-
-        Removes the user from the notifications and personal groups.
-
-        :param close_code: the code indicating the reason for disconnection.
-        """
         await self.channel_layer.group_discard(
             self.notifications_group,
             self.channel_name
         )
-
         await self.channel_layer.group_discard(
             self.personal_group,
             self.channel_name
         )
 
     async def receive(self, text_data):
-        """
-        Receive a message from the WebSocket.
-
-        Sends the received message to the notifications group.
-
-        :param text_data: the received message data as a string.
-        """
-
         data = json.loads(text_data)
         message = data.get('message')
 
@@ -64,11 +65,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         )
 
     async def send_notification(self, event):
-        """
-        Send a notification to the WebSocket client.
-
-        :param event: the event containing the notification message.
-        """
         message = event['message']
         await self.send(text_data=json.dumps({
             'message': message
