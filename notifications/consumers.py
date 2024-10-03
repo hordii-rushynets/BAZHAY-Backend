@@ -34,8 +34,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'send_notification',
                     'message': {
-                        'welcome_message_uk': welcome_message_uk,
-                        'welcome_message_en': welcome_message_en
+                        'message_uk': welcome_message_uk,
+                        'message_en': welcome_message_en
                     }
                 }
             )

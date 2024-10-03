@@ -17,7 +17,10 @@ def send_notification_task(notification_id):
         notification = Notification.objects.get(id=notification_id)
         if notification.send_at <= timezone.now():
             channel_layer = get_channel_layer()
-            notification_data = notification.message
+            notification_data = {
+                'message_uk': notification.message_uk,
+                'message_en': notification.message_en
+            }
 
             if notification.users.exists():
                 for user in notification.users.all():
