@@ -31,7 +31,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         if not self.user.is_already_registered:
             message = await database_sync_to_async(
-                lambda: Notification.objects.filter(name='Welcome Message').first()
+                lambda: Notification.objects.filter(message_en='Hi there! We’re happy to welcome you to Bazhay!').first()
             )()
 
             if message:
