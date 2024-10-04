@@ -13,6 +13,7 @@ class Notification(models.Model):
     """
     Model representing a notification.
     """
+    name = models.CharField(max_length=50, blank=True, null=True)
     message = models.TextField()
     send_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
