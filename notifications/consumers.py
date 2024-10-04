@@ -1,7 +1,9 @@
 import json
+
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .message_text import welcome_message_uk, welcome_message_en
+
+from .models import Notification
 
 
 class NotificationConsumer(AsyncWebsocketConsumer):
@@ -28,19 +30,21 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         if not self.user.is_already_registered:
+            message = await database_sync_to_async(
+                lambda: Notification.objects.filter(name='Welcome Message').first()
+            )()
 
-            await self.channel_layer.group_send(
-                self.personal_group,
-                {
-                    'type': 'send_notification',
-                    'message': {
-                        'message_uk': welcome_message_uk,
-                        'message_en': welcome_message_en
+            if message:
+                await self.channel_layer.group_send(
+                    self.personal_group,
+                    {
+                        'type': 'send_notification',
+                        'message': {
+                            'message_en': message.message_en,
+                            'message_uk': message.message_uk,
+                        }
                     }
-                }
-            )
-
-            await database_sync_to_async(self.user.save)()
+                )
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
