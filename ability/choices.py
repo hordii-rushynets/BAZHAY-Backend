@@ -16,4 +16,6 @@ access_type_choices = [
         ('only_me', 'Only_me'),
 ]
 
+access_type_list = [_[0] for _ in access_type_choices]
+
 valid_mime_types = ['video/mp4', 'video/avi', 'video/mov', 'video/mpeg']
