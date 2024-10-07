@@ -4,19 +4,30 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
 from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 
+from django.core.cache import cache
 from django.db.models.query import QuerySet
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Wish, Reservation
-from .serializers import WishSerializer, ReservationSerializer, VideoSerializer, CombinedSearchSerializer
+from .serializers import (WishSerializer,
+                          ReservationSerializer,
+                          VideoSerializer,
+                          CombinedSearchSerializer,
+                          QuerySerializer)
+
 from .filters import WishFilter
-from rest_framework.pagination import PageNumberPagination
+from .services import PopularRequestService
 
 from subscription.models import Subscription
 from user.models import BazhayUser
 from brand.models import Brand
+
+
+SECONDS_IN_A_DAY = 86400
 
 
 def can_view_ability(user, ability):
@@ -155,6 +166,25 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
         self.queryset.exclude(author=self.request.user)
         return super().list(request, *args, **kwargs)
 
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def view(self, request, pk=None):
+        wish = self.get_object()
+
+        if wish.author == request.user:
+            return Response({'message': 'You cannot view your own wish.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        cache_key = f"user:{request.user.id}:viewed_wish:{wish.id}"
+
+        if cache.get(cache_key):
+            return Response(status=status.HTTP_200_OK)
+
+        cache.set(cache_key, True, timeout=7 * SECONDS_IN_A_DAY)
+
+        wish.views_number += 1
+        wish.save()
+
+        return Response(status=status.HTTP_200_OK)
+
 
 class ReservationViewSet(viewsets.ModelViewSet):
     """
@@ -205,23 +235,37 @@ class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
 
 class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
     """
-    View for searching across BazhayUser, Wish abd Brand models.
+    View for searching across BazhayUser, Wish, and Brand models.
     """
     serializer_class = CombinedSearchSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = PageNumberPagination
+    service = PopularRequestService()
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         """
         Handle GET requests to search across users and wishes
 
         :param request: DRF request object containing search query.
-
         :return: Response with serialized search results or an error message if no query is provided.
         """
         query = request.query_params.get('query', None)
 
         if query:
             querysets = self.get_queryset(query)
+            self.service.set(query)
+
+            self.__delete_not_using_fields(request, querysets)
+
+            active_fields = len(querysets)
+
+            if active_fields == 3:
+                self.__querysets_trim(querysets, 5)
+            elif active_fields == 2:
+                self.__querysets_trim(querysets, 8)
+            elif active_fields == 1:
+                return self.__pagination_one_field(request, querysets)
+
             serializer = self.get_serializer(querysets, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -235,11 +279,44 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         :return: A dictionary containing querysets for both users and wishes filtered by the search term.
         """
-        bazhay_user_results = BazhayUser.objects.filter(
-            Q(email__icontains=query) | Q(username__icontains=query) | Q(about_user__icontains=query)
-        ).exclude(email=self.request.user.email).exclude(is_superuser=True).annotate(subscriber_count=Count('subscribers')).order_by('-subscriber_count')
+        return {
+            'users': self.__get_bazhay_user_results(query),
+            'wishes': self.__get_wish_results(query),
+            'brands': self.__get_brand_results(query),
+        }
 
-        wish_results = Wish.objects.filter(
+    def __querysets_trim(self, queryset: dict, size: int) -> None:
+        """
+        Trims the query to the required length in each key-value pair.
+
+        :param queryset (dict): Dictionary where the key is a string and the value is a list.
+        :param size (int): The size to which you want to trim.
+        :return: None.
+        """
+        for key in queryset.keys():
+            queryset[key] = queryset[key][:size]
+
+    def __get_bazhay_user_results(self, query: str | None) -> tuple[BazhayUser]:
+        """
+        Returns a tuple of users.
+
+        :param query (str): Search query.
+        :return: The tuple BazhayUser.
+        """
+        return BazhayUser.objects.filter(
+            Q(email__icontains=query)
+            | Q(username__icontains=query)
+            | Q(about_user__icontains=query)).exclude(email=self.request.user.email).exclude(is_superuser=True
+            ).annotate(subscriber_count=Count('subscribers')).order_by('-subscriber_count')
+
+    def __get_wish_results(self, query: str | None) -> tuple[Wish]:
+        """
+        Returns a tuple of wishes.
+
+        :param query (str): Search query.
+        :return: The tuple Wish.
+        """
+        return Wish.objects.filter(
             Q(name__icontains=query)
             | Q(description__icontains=query)
             | Q(additional_description__icontains=query)
@@ -248,15 +325,85 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
             | Q(brand_author__nickname__icontains=query)
             | Q(news_author__title__icontains=query)
             | Q(news_author__description__icontains=query)
-        ).exclude(author=self.request.user)
+        ).exclude(author=self.request.user).order_by('-views_number')
 
-        brand_results = Brand.objects.filter(Q(name__icontains=query)
-                                             | Q(name__icontains=query)
-                                             | Q(nickname__icontains=query)
-                                             | Q(description__icontains=query))
+    def __get_brand_results(self, query: str | None) -> tuple[Brand]:
+        """
+        Returns a tuple of brands.
 
-        return {
-            'users': bazhay_user_results,
-            'wishes': wish_results,
-            'brands': brand_results,
-        }
+        :param query (str): Search query.
+        :return: The tuple Brand.
+        """
+        return Brand.objects.filter(Q(name__icontains=query)
+                  | Q(name__icontains=query)
+                  | Q(nickname__icontains=query)
+                  | Q(description__icontains=query)).order_by('-views_number')
+
+    def __delete_not_using_fields(self, request: Request, queryset: dict) -> None:
+        """
+        Removes unnecessary fields from queryset. Changes the one that was transmitted.
+
+        :param request (Request): For information about the required fields.
+        :param queryset (Queryset): Queryset that will be changed in the workflow.
+        :return: None.
+        """
+        users = request.query_params.get('users', 'true').lower() == 'false'
+        wishes = request.query_params.get('wishes', 'true').lower() == 'false'
+        brands = request.query_params.get('brands', 'true').lower() == 'false'
+
+        if users:
+            del queryset['users']
+        if wishes:
+            del queryset['wishes']
+        if brands:
+            del queryset['brands']
+
+    def __pagination_one_field(self, request: Request, queryset: dict) -> Response:
+        """
+        Returns the paginated page.
+
+        :param request (Request): Transferred to the serializer.
+        :paraam queryset (dict): data to be paginated.
+
+        :return: paginated Response
+        """
+        key = next(iter(queryset))
+        paginated_queryset = self.paginate_queryset(queryset[key])
+
+        if paginated_queryset is not None:
+            serializer = self.get_serializer({key: paginated_queryset}, context={'request': request})
+            return self.get_paginated_response(serializer.data)
+
+
+class QueryView(viewsets.mixins.CreateModelMixin, viewsets.mixins.ListModelMixin, viewsets.GenericViewSet):
+    """
+    Add and return popular queries.
+    """
+
+    serializer_class = QuerySerializer
+    service = PopularRequestService()
+
+    def get_queryset(self):
+        """
+        Returns a list of queries matching the input parameter.
+
+        :return: List of dictionaries containing 'query' and 'count' keys.
+        """
+        query = self.request.query_params.get('query', None)
+        results = self.service.get(query)
+
+        return [{'query': result['query'], 'count': result['count']} for result in results]
+
+    def create(self, request):
+        """
+        Saves a new query to the service.
+
+        :param request (Request): Request object with query data.
+        :return: Response indicating the result of the operation.
+        """
+        query = request.data.get('query')
+        if not query:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        self.service.set(query)
+        return Response({'message': 'Query saved successfully'}, status=status.HTTP_201_CREATED)

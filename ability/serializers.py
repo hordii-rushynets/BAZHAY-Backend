@@ -304,3 +304,9 @@ class CombinedSearchSerializer(serializers.Serializer):
     class Meta:
         fields = ['wishes', 'users', 'brands']
 
+
+class QuerySerializer(serializers.Serializer):
+    """Serializer to query."""
+    query = serializers.CharField(max_length=255, required=False)
+    count = serializers.IntegerField(read_only=True)
+

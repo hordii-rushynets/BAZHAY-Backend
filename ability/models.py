@@ -34,22 +34,6 @@ class Wish(models.Model):
     """
     Model representing a wish or request for a specific item or experience.
 
-    Attributes:
-        name (str): The name or title of the wish.
-        photo (ImageField, optional): An optional image related to the wish.
-        video (FileField, optional): An optional video related to the wish.
-        image_size (float, optional): The size of the wish image in megabytes.
-        price (int, optional): The price of the wish item.
-        link (URLField, optional): A URL link related to the wish.
-        description (TextField, optional): A description of the wish.
-        additional_description (TextField, optional): Additional information about the wish.
-        access_type (str): The type of access to the wish (e.g., 'everyone', 'only_me', 'subscribers').
-        author (ForeignKey, optional): The user who created the wish.
-        brand_author (ForeignKey, optional): The brand associated with the wish.
-        news_author (ForeignKey, optional): The news article related to the wish.
-        currency (str, optional): The currency of the wish price.
-        is_fully_created (bool): A flag indicating if the wish is fully created.
-        created_at (DateTimeField, optional): The date and time when the wish was created.
     """
     ACCESS_TYPE_CHOICES = choices.access_type_choices
     CURRENCY_CHOICES = choices.currency_choices
@@ -69,6 +53,7 @@ class Wish(models.Model):
     currency = models.CharField(max_length=50, null=True, blank=True,  choices=CURRENCY_CHOICES)
     is_fully_created = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    views_number = models.PositiveIntegerField(blank=True, null=True, default=0)
 
     def __str__(self) -> str:
         """Return the name of the wish."""
