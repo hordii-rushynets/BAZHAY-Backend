@@ -5,6 +5,7 @@ from rest_framework.serializers import Serializer
 from rest_framework.request import Request
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 
 from django.core.cache import cache
 from django.db.models.query import QuerySet
@@ -12,13 +13,19 @@ from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Wish, Reservation
-from .serializers import WishSerializer, ReservationSerializer, VideoSerializer, CombinedSearchSerializer
+from .serializers import (WishSerializer,
+                          ReservationSerializer,
+                          VideoSerializer,
+                          CombinedSearchSerializer,
+                          QuerySerializer)
+
 from .filters import WishFilter
-from rest_framework.pagination import PageNumberPagination
+from .services import PopularRequestService
 
 from subscription.models import Subscription
 from user.models import BazhayUser
 from brand.models import Brand
+
 
 SECONDS_IN_A_DAY = 86400
 
@@ -233,6 +240,7 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
     serializer_class = CombinedSearchSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = PageNumberPagination
+    service = PopularRequestService()
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         """
@@ -245,6 +253,7 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
 
         if query:
             querysets = self.get_queryset(query)
+            self.service.set(query)
 
             self.__delete_not_using_fields(request, querysets)
 
@@ -364,3 +373,37 @@ class SearchView(viewsets.GenericViewSet, mixins.ListModelMixin):
         if paginated_queryset is not None:
             serializer = self.get_serializer({key: paginated_queryset}, context={'request': request})
             return self.get_paginated_response(serializer.data)
+
+
+class QueryView(viewsets.mixins.CreateModelMixin, viewsets.mixins.ListModelMixin, viewsets.GenericViewSet):
+    """
+    Add and return popular queries.
+    """
+
+    serializer_class = QuerySerializer
+    service = PopularRequestService()
+
+    def get_queryset(self):
+        """
+        Returns a list of queries matching the input parameter.
+
+        :return: List of dictionaries containing 'query' and 'count' keys.
+        """
+        query = self.request.query_params.get('query', None)
+        results = self.service.get(query)
+
+        return [{'query': result['query'], 'count': result['count']} for result in results]
+
+    def create(self, request):
+        """
+        Saves a new query to the service.
+
+        :param request (Request): Request object with query data.
+        :return: Response indicating the result of the operation.
+        """
+        query = request.data.get('query')
+        if not query:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        self.service.set(query)
+        return Response({'message': 'Query saved successfully'}, status=status.HTTP_201_CREATED)

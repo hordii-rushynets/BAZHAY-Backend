@@ -34,3 +34,4 @@ django-storages==1.14.3
 django-cors-headers==4.4.0
 moviepy==1.0.3
 google-auth==2.32.0
+python-Levenshtein==0.26.0
