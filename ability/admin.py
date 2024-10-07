@@ -18,6 +18,7 @@ class WishAdmin(admin.ModelAdmin):
     """
     list_display = ['name', 'display_author']
     search_fields = ['author__email', 'brand_author__nickname', 'name']
+    exclude = ('name', 'description', 'additional_description')
 
 
 admin.site.register(Reservation)

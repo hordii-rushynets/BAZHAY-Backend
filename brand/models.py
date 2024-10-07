@@ -10,6 +10,7 @@ class Brand(Slug):
     description = models.TextField()
     photo = models.ImageField(upload_to='brand_photos/')
     views_number = models.PositiveIntegerField(blank=True, null=True, default=0)
+    cover_photo = models.ImageField(upload_to='brand_photos/', blank=True, null=True,)
 
     def __str__(self) -> str:
         return str(self.nickname)
