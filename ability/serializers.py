@@ -19,21 +19,6 @@ class WishSerializer(serializers.ModelSerializer):
     Handles the serialization and validation of Wish instances, including
     fields for various attributes, user-related fields, and custom validation
     based on the user's subscription status.
-
-    Attributes:
-        photo (ImageField): Optional image field for the wish.
-        video (FileField): Optional video field for the wish.
-        author (ReturnBazhayUserSerializer): Serializer for the user who created the wish.
-        brand_author (BrandSerializer): Serializer for the brand associated with the wish.
-        news_author (NewsSerializers): Serializer for the news source associated with the wish.
-        is_reservation (SerializerMethodField): Indicates if the wish is reserved.
-        is_user_create (SerializerMethodField): Indicates if the wish was created by the user.
-        is_your_wish (SerializerMethodField): Indicates if the wish belongs to the requesting user.
-
-    Meta:
-        model: The model associated with this serializer (Wish).
-        fields: List of fields to be included in the serialized representation.
-        read_only_fields: Fields that are read-only.
     """
     photo = serializers.ImageField(required=False)
     video = serializers.FileField(required=False)
@@ -71,12 +56,10 @@ class WishSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         is_premium = hasattr(user, 'premium') and user.premium.is_active
 
-        # Validate the number of wishes for non-premium users
-        if not is_premium:
+        if self.instance is None and not is_premium:
             if Wish.objects.filter(author=user).count() >= 10:
                 raise ValidationError("You cannot create more than 10 wishes without a premium subscription.")
 
-        # Validate the access type for non-premium users
         if not is_premium and 'access_type' in data and data['access_type'] != 'everyone':
             raise ValidationError(
                 "You cannot change the access type to a non-default value without a premium subscription.")
