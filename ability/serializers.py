@@ -31,8 +31,9 @@ class WishSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Wish
-        fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
-                  'additional_description', 'access_type', 'currency', 'created_at', 'is_fully_created',
+        fields = ['id', 'name', 'name_en', 'name_uk', 'photo', 'video', 'price', 'link', 'description',
+                  'description_en', 'description_uk',
+                  'additional_description', 'additional_description_en', 'additional_description_uk', 'access_type', 'currency', 'created_at', 'is_fully_created',
                   'is_reservation', 'is_user_create', 'is_your_wish', 'image_size', 'author', 'brand_author',
                   'news_author']
         read_only_fields = ['id', 'author', 'created_at', 'brand_author', 'news_author']
@@ -289,8 +290,9 @@ class WishSerializerForNotUser(serializers.ModelSerializer):
     """
     class Meta:
         model = Wish
-        fields = ['id', 'name', 'photo', 'video', 'price', 'link', 'description',
-                  'additional_description', 'currency', 'created_at', 'image_size']
+        fields = ['id', 'name', 'name_en', 'name_uk', 'photo', 'video', 'price', 'link', 'description', 'description_en', 'description_uk',
+                  'additional_description', 'additional_description_en', 'additional_description_uk', 'currency',
+                  'created_at', 'image_size']
 
 
 class CombinedSearchSerializer(serializers.Serializer):
