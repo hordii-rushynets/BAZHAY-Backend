@@ -146,7 +146,7 @@ class UpdateUserViewSet(viewsets.GenericViewSet,
     """
     queryset = BazhayUser.objects.all()
     serializer_class = UpdateUserSerializers
-    permission_classes = [IsRegisteredUserOrReadOnly]
+    permission_classes = [IsRegisteredUser]
 
     def get_object(self):
         """
