@@ -9,13 +9,16 @@ from .views import (AuthViewSet,
                     GuestUserViewSet,
                     UpdateUserPhotoViewSet,
                     GoogleLoginView,
-                    ListUserViewSet)
+                    ListUserViewSet,
+                    AddressViewSet)
 
 router = DefaultRouter()
 router.register(r'auth', AuthViewSet, basename='auth')
 router.register(r'auth/guest', GuestUserViewSet, basename='auth_guest')
 router.register(r'user/update-email', UpdateUserEmailViewSet, basename='update_email')
 router.register(r'users', ListUserViewSet, basename='users_list')
+router.register(r'user/address', AddressViewSet, basename='users_address')
+router.register(r'user/post-address', AddressViewSet, basename='users_post_address')
 
 urlpatterns = router.urls + [
     path('user/', UpdateUserViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})),

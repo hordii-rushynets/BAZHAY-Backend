@@ -87,3 +87,30 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
     def __str__(self) -> str:
         """Returns the string representation of the user, which is the email address."""
         return str(self.email)
+
+
+class Address(models.Model):
+    user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='address')
+    country = models.CharField(max_length=100)
+    region = models.CharField(max_length=100)
+    city = models.CharField(max_length=100)
+    street = models.CharField(max_length=100)
+    post_index = models.CharField(max_length=50)
+    full_name = models.CharField(max_length=200)
+    phone_number = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.user.username}, {self.country} {self.region} {self.city}"
+
+
+class PostAddress(models.Model):
+    user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='post_address')
+    country = models.CharField(max_length=100)
+    post_service = models.CharField(max_length=100)
+    city = models.CharField(max_length=100)
+    nearest_branch = models.CharField(max_length=100)
+    full_name = models.CharField(max_length=200)
+    phone_number = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.user.username}, {self.nearest_branch}"

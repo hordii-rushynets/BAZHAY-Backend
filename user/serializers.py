@@ -1,7 +1,8 @@
 from django.core.cache import cache
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
-from .models import BazhayUser
+from .models import BazhayUser, Address, PostAddress
 
 from subscription.models import Subscription
 
@@ -90,6 +91,34 @@ class ConfirmCodeSerializer(serializers.Serializer):
         return data
 
 
+class AddressSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Address
+        fields = ['id', 'country', 'region', 'city', 'street', 'post_index', 'full_name', 'phone_number']
+        read_only_fields = ['id']
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        if Address.objects.filter(user=request.user).exists():
+            raise ValidationError(detail="Address for this user already exists.")
+        return attrs
+
+
+class PostAddressSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostAddress
+        fields = ['id', 'country', 'post_service', 'city', 'nearest_branch', 'full_name', 'phone_number']
+        read_only_fields = ['id']
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        if PostAddress.objects.filter(user=request.user).exists():
+            raise ValidationError(detail="Address for this user already exists.")
+        return attrs
+
+
 class UpdateUserSerializers(serializers.ModelSerializer):
     """
     Serializer for retrieving or updating user data.
@@ -97,37 +126,6 @@ class UpdateUserSerializers(serializers.ModelSerializer):
     This serializer provides a read-only view of the user's email, guest status, photo,
     subscription counts, subscriber counts, and subscription status. Additionally,
     it includes methods to determine if the user is premium or subscribed to another user.
-
-    Fields:
-        - id (int): User ID.
-        - photo (ImageField): User profile photo (read-only).
-        - email (str): User email address (read-only).
-        - first_name (str): First name of the user.
-        - last_name (str): Last name of the user.
-        - username (str): Username of the user.
-        - birthday (date): User's birthday.
-        - view_birthday (bool): Whether the birthday is visible.
-        - about_user (str): User's description or bio.
-        - sex (str): User's gender.
-        - is_guest (bool): Indicates whether the user is a guest (read-only).
-        - is_premium (bool): Whether the user has an active premium subscription (read-only).
-        - is_already_registered (bool): Whether the guest user has been converted to a registered user.
-        - is_subscribed (bool): Whether the requesting user is subscribed to the user (read-only).
-        - subscription (int): Number of subscriptions the user has (read-only).
-        - subscriber (int): Number of subscribers the user has (read-only).
-
-    Methods:
-        get_subscription(obj):
-            Returns the count of subscriptions (users the user is subscribed to).
-
-        get_subscriber(obj):
-            Returns the count of subscribers (users subscribed to the user).
-
-        get_is_premium(obj):
-            Returns True if the user has an active premium subscription, otherwise False.
-
-        get_is_subscribed(obj):
-            Returns True if the current request user is subscribed to the provided user.
     """
     email = serializers.EmailField(read_only=True)
     is_guest = serializers.BooleanField(read_only=True)
@@ -141,7 +139,7 @@ class UpdateUserSerializers(serializers.ModelSerializer):
         model = BazhayUser
         fields = ['id', 'photo', 'email', 'first_name', 'last_name', 'username',
                   'birthday', 'view_birthday', 'about_user', 'sex', 'is_guest', 'is_premium', 'is_already_registered',
-                  'is_subscribed', 'subscription', 'subscriber']
+                  'is_subscribed', 'subscription', 'subscriber', ]
 
     def get_subscription(self, obj):
         """
