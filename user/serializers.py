@@ -92,31 +92,32 @@ class ConfirmCodeSerializer(serializers.Serializer):
 
 
 class AddressSerializer(serializers.ModelSerializer):
+    country = serializers.CharField(required=False)
+    region = serializers.CharField(required=False)
+    city = serializers.CharField(required=False)
+    street = serializers.CharField(required=False)
+    post_index = serializers.CharField(required=False)
+    full_name = serializers.CharField(required=False)
+    phone_number = serializers.CharField(required=False)
 
     class Meta:
         model = Address
         fields = ['id', 'country', 'region', 'city', 'street', 'post_index', 'full_name', 'phone_number']
         read_only_fields = ['id']
 
-    def validate(self, attrs):
-        request = self.context.get('request')
-        if Address.objects.filter(user=request.user).exists():
-            raise ValidationError(detail="Address for this user already exists.")
-        return attrs
-
 
 class PostAddressSerializer(serializers.ModelSerializer):
+    country = serializers.CharField(required=False)
+    post_service = serializers.CharField(required=False)
+    city = serializers.CharField(required=False)
+    nearest_branch = serializers.CharField(required=False)
+    full_name = serializers.CharField(required=False)
+    phone_number = serializers.CharField(required=False)
 
     class Meta:
         model = PostAddress
         fields = ['id', 'country', 'post_service', 'city', 'nearest_branch', 'full_name', 'phone_number']
         read_only_fields = ['id']
-
-    def validate(self, attrs):
-        request = self.context.get('request')
-        if PostAddress.objects.filter(user=request.user).exists():
-            raise ValidationError(detail="Address for this user already exists.")
-        return attrs
 
 
 class UpdateUserSerializers(serializers.ModelSerializer):
