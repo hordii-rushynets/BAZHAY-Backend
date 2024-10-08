@@ -10,7 +10,7 @@ from rest_framework.pagination import PageNumberPagination
 
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import BazhayUser
+from .models import BazhayUser, Address, PostAddress
 from .authentication import IgnoreInvalidTokenAuthentication
 from .serializers import (CreateUserSerializer,
                           ConfirmCodeSerializer,
@@ -21,12 +21,15 @@ from .serializers import (CreateUserSerializer,
                           ConvertGuestUserSerializer,
                           UpdateUserPhotoSerializer,
                           GoogleAuthSerializer,
-                          ReturnBazhayUserSerializer)
+                          ReturnBazhayUserSerializer,
+                          AddressSerializer,
+                          PostAddressSerializer)
 from .utils import save_and_send_confirmation_code
 from .filters import BazhayUserFilter
 
 from permission.permissions import (IsRegisteredUser,
-                                    IsRegisteredUserOrReadOnly)
+                                    IsRegisteredUserOrReadOnly,
+                                    IsOwner)
 
 
 def is_valid(serializer: serializers.Serializer) -> Response:
@@ -363,3 +366,34 @@ class ListUserViewSet(viewsets.ReadOnlyModelViewSet):
             QuerySet: The filtered queryset of users.
         """
         return self.queryset.exclude(id=self.request.user.id)
+
+
+class AddressViewSet(viewsets.ModelViewSet):
+    queryset = Address.objects.all()
+    serializer_class = AddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Address.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class PostAddressViewSet(viewsets.ModelViewSet):
+    queryset = PostAddress.objects.all()
+    serializer_class = PostAddressSerializer
+    permission_classes = [IsAuthenticated, IsOwner]
+
+    def get_queryset(self):
+        return PostAddress.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+

@@ -26,3 +26,11 @@ class IsRegisteredUserOrReadOnly(BasePermission):
             return True
 
         return False
+
+
+class IsOwner(BasePermission):
+    """
+    Allows access only to the author (owner) of the record.
+    """
+    def has_object_permission(self, request, view, obj):
+        return obj.user == request.user
