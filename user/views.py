@@ -372,28 +372,91 @@ class AddressViewSet(viewsets.ModelViewSet):
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'put', 'patch']
 
     def get_queryset(self):
         return Address.objects.filter(user=self.request.user)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    def create_default_address(self):
+        return Address.objects.create(
+            user=self.request.user,
+            country='',
+            region='',
+            city='',
+            street='',
+            post_index='',
+            full_name='',
+            phone_number=''
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        address = self.get_queryset().first()
+
+        if not address:
+            address = self.create_default_address()
+
+        serializer = self.get_serializer(address)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        if not queryset.exists():
+            address = self.create_default_address()
+            queryset = Address.objects.filter(pk=address.pk)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class PostAddressViewSet(viewsets.ModelViewSet):
     queryset = PostAddress.objects.all()
     serializer_class = PostAddressSerializer
-    permission_classes = [IsAuthenticated, IsOwner]
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'put', 'patch']
 
     def get_queryset(self):
         return PostAddress.objects.filter(user=self.request.user)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    def create_default_post_address(self):
+        return PostAddress.objects.create(
+            user=self.request.user,
+            country='',
+            post_service='',
+            city='',
+            nearest_branch='',
+            full_name='',
+            phone_number=''
+        )
 
+    def retrieve(self, request, *args, **kwargs):
+        post_address = self.get_queryset().first()
+
+        if not post_address:
+            post_address = self.create_default_post_address()
+
+        serializer = self.get_serializer(post_address)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        if not queryset.exists():
+            post_address = self.create_default_post_address()
+            queryset = PostAddress.objects.filter(pk=post_address.pk)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        post_address = self.get_queryset().first()
+
+        if not post_address:
+            return Response({"detail": "Address not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(post_address, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
