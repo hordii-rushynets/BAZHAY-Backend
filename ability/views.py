@@ -25,6 +25,7 @@ from .services import PopularRequestService
 from subscription.models import Subscription
 from user.models import BazhayUser
 from brand.models import Brand
+from permission.permissions import IsRegisteredUserOrReadOnly, IsRegisteredUser
 
 
 SECONDS_IN_A_DAY = 86400
@@ -58,7 +59,7 @@ class WishViewSet(viewsets.ModelViewSet):
     """
     queryset = Wish.objects.all()
     serializer_class = WishSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUserOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = WishFilter
     pagination_class = PageNumberPagination
@@ -133,7 +134,7 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = Wish.objects.all()
     serializer_class = WishSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUserOrReadOnly]
     filter_backends = (DjangoFilterBackend,)
     filterset_class = WishFilter
     pagination_class = PageNumberPagination
@@ -200,7 +201,7 @@ class ReservationViewSet(viewsets.ModelViewSet):
     """
     queryset = Reservation.objects.all()
     serializer_class = ReservationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsRegisteredUser]
 
     def get_queryset(self) -> QuerySet:
         """
