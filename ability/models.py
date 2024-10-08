@@ -79,8 +79,14 @@ class Wish(models.Model):
       
 
 class Reservation(models.Model):
-    bazhay_user = models.ForeignKey(BazhayUser, related_name='reservation', on_delete=models.CASCADE)
-    wish = models.ForeignKey(Wish, related_name='reservation', on_delete=models.CASCADE)
+    """
+    Reservation of a wish for a user.
+    """
+    bazhay_user = models.ForeignKey(BazhayUser, related_name='reservations', on_delete=models.CASCADE)
+    wish = models.ForeignKey(Wish, related_name='reservations', on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)
+    selected_giver = models.ForeignKey(BazhayUser, null=True, blank=True, related_name='selected_giver', on_delete=models.SET_NULL)
 
     def __str__(self):
         return f"{self.bazhay_user} reservation {self.wish.name}"
+

@@ -88,6 +88,12 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
         """Returns the string representation of the user, which is the email address."""
         return str(self.email)
 
+    def is_premium(self):
+        try:
+            return self.premium.is_active
+        except:
+            return False
+
 
 class Address(models.Model):
     user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='address')

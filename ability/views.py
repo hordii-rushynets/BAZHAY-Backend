@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, mixins
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
 from rest_framework import status
@@ -24,7 +25,9 @@ from .services import PopularRequestService
 
 from subscription.models import Subscription
 from user.models import BazhayUser
+from user.serializers import ReturnBazhayUserSerializer
 from brand.models import Brand
+from permission.permissions import IsPremium
 
 
 SECONDS_IN_A_DAY = 86400
@@ -187,32 +190,41 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ReservationViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing reservations.
-
-    Provides CRUD operations for reservations where users can create, retrieve, update, and delete their reservations.
-    The `get_queryset` method filters reservations to only include those associated with the requesting user.
-
-    Attributes:
-        queryset (QuerySet): The queryset of `Reservation` objects.
-        serializer_class (Type[serializers.ModelSerializer]): The serializer used for handling reservation data.
-        permission_classes (List[Type[permissions.BasePermission]]): List of permission classes to enforce user authentication.
-    """
     queryset = Reservation.objects.all()
     serializer_class = ReservationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self) -> QuerySet:
-        """
-        Returns the QuerySet of reservations for the requesting user.
-
-        Filters the reservations to include only those that belong to the currently authenticated user.
-
-        Returns:
-            QuerySet: A QuerySet of `Reservation` objects associated with the requesting user.
-        """
         bazhay_user = self.request.user
+        if bazhay_user.is_premium:
+            return super().get_queryset().filter(wish__reservations__is_active=True)
         return super().get_queryset().filter(bazhay_user=bazhay_user)
+
+    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated, IsPremium])
+    def wish_reservations(self, request: Request, pk: int = None) -> Response:
+        wish_id = pk
+        reservations = self.get_queryset().filter(wish_id=wish_id, is_active=True)
+        serializer = self.get_serializer(reservations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated, IsPremium])
+    def select_giver(self, request: Request, pk: int = None) -> Response:
+        reservation = self.get_object()
+        if reservation.wish.author != request.user:
+            return Response({"detail": "Only the wish author can select a giver."}, status=status.HTTP_403_FORBIDDEN)
+
+        selected_giver_id = request.data.get('selected_giver')
+        selected_giver = BazhayUser.objects.filter(id=selected_giver_id).first()
+
+        if not selected_giver:
+            return Response({"detail": "Selected giver not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        reservation.selected_giver = selected_giver
+        reservation.is_active = False
+        reservation.save()
+
+        return Response({"message": "Selected giver has been set."}, status=status.HTTP_200_OK)
+
 
 
 class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):

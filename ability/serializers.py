@@ -104,50 +104,23 @@ class WishSerializer(serializers.ModelSerializer):
         return obj.author == self.context['request'].user
 
 
-class ReservationSerializer(serializers.Serializer):
-    """
-    Serializer for creating and validating reservations for wishes.
-
-    This serializer handles the creation of reservations, including validation
-    to ensure that users cannot reserve their own wishes or reserve a wish that
-    is already reserved. It also checks that certain conditions are met before
-    allowing the reservation.
-
-    Attributes:
-        bazhay_user (ReturnBazhayUserSerializer): The user making the reservation.
-        wish (WishSerializer): The wish being reserved.
-        wish_id (PrimaryKeyRelatedField): The ID of the wish being reserved, used for creating reservations.
-
-    Meta:
-        model: The model associated with this serializer (Reservation).
-        fields: List of fields to be included in the serialized representation.
-        read_only_fields: Fields that are read-only.
-    """
+class ReservationSerializer(serializers.ModelSerializer):
+    """Serializer to reservation of a wish."""
     bazhay_user = ReturnBazhayUserSerializer(read_only=True)
     wish = WishSerializer(read_only=True)
     wish_id = serializers.PrimaryKeyRelatedField(queryset=Wish.objects.all(), write_only=True, source='wish')
 
     class Meta:
         model = Reservation
-        fields = ['id', 'bazhay_user', 'wish', 'wish_id']
-        read_only_fields = ['id']
+        fields = ['id', 'bazhay_user', 'wish', 'wish_id', 'is_active', 'selected_giver']
+        read_only_fields = ['id', 'bazhay_user']
 
     def validate(self, attrs: dict) -> dict:
         """
-        Validate reservation data.
+        Валідація даних.
 
-        Ensures that the user is not reserving their own wish, that the wish is not
-        already reserved, and that the wish meets certain conditions before allowing
-        the reservation.
-
-        Args:
-            attrs (dict): The data to be validated.
-
-        Returns:
-            dict: The validated data.
-
-        Raises:
-            serializers.ValidationError: If any validation checks fail.
+        :param attrs: Data to be validated.
+        :return: Validated data.
         """
         user = self.context['request'].user
         wish = attrs.get('wish')
@@ -155,26 +128,33 @@ class ReservationSerializer(serializers.Serializer):
         if wish.author == user:
             raise serializers.ValidationError("You can't reserve your own wishes.")
 
-        if Reservation.objects.filter(wish=wish).exists():
-            raise serializers.ValidationError("This wish is already reserved.")
+        if Reservation.objects.filter(wish=wish, bazhay_user=user).exists():
+            raise serializers.ValidationError("This wish is already reserved by you.")
 
-        if not wish.author and (wish.news_author or wish.brand_author):
-            raise serializers.ValidationError("You can't reserve this wish.")
+        if Reservation.objects.filter(wish=wish).exists().is_active is False:
+            raise serializers.ValidationError("This wish is already reserved by other user.")
 
         return attrs
 
     def create(self, validated_data: dict) -> Reservation:
         """
-        Create a new reservation.
+        Creating a backup.
+        If the user is not a premium user, it is reserved for the first one.
 
-        Args:
-            validated_data (dict): The validated data used to create the reservation.
-
-        Returns:
-            Reservation: The newly created reservation instance.
+        :param validated_data: Validated data.
+        :return: Reservation
         """
         user = self.context['request'].user
+
         reservation = Reservation.objects.create(bazhay_user=user, **validated_data)
+
+        if not user.is_premium:
+            first_reservation = Reservation.objects.filter(wish=reservation.wish).first()
+            if first_reservation:
+                reservation.selected_giver = first_reservation.bazhay_user
+                reservation.is_active = False
+                reservation.save()
+
         return reservation
 
 
