@@ -372,7 +372,7 @@ class AddressViewSet(viewsets.ModelViewSet):
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
     permission_classes = [IsAuthenticated]
-    http_method_names = ['get', 'put', 'patch']
+    http_method_names = ['get', 'put', 'patch', 'delete']
 
     def get_queryset(self):
         return Address.objects.filter(user=self.request.user)
@@ -413,7 +413,7 @@ class PostAddressViewSet(viewsets.ModelViewSet):
     queryset = PostAddress.objects.all()
     serializer_class = PostAddressSerializer
     permission_classes = [IsAuthenticated]
-    http_method_names = ['get', 'put', 'patch']
+    http_method_names = ['get', 'put', 'patch', 'delete']
 
     def get_queryset(self):
         return PostAddress.objects.filter(user=self.request.user)
