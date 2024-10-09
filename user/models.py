@@ -105,12 +105,12 @@ class Address(models.Model):
 
 class PostAddress(models.Model):
     user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='post_address')
-    country = models.CharField(max_length=100)
-    post_service = models.CharField(max_length=100)
-    city = models.CharField(max_length=100)
-    nearest_branch = models.CharField(max_length=100)
-    full_name = models.CharField(max_length=200)
-    phone_number = models.CharField(max_length=100)
+    country = models.CharField(max_length=100, blank=True)
+    post_service = models.CharField(max_length=100, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    nearest_branch = models.CharField(max_length=100, blank=True)
+    full_name = models.CharField(max_length=200, blank=True)
+    phone_number = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         return f"{self.user.username}, {self.nearest_branch}"
