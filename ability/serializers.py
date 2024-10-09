@@ -117,7 +117,7 @@ class ReservationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs: dict) -> dict:
         """
-        Валідація даних.
+        Data validation.
 
         :param attrs: Data to be validated.
         :return: Validated data.

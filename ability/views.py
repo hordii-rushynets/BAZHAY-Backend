@@ -195,36 +195,64 @@ class ReservationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self) -> QuerySet:
-        bazhay_user = self.request.user
-        if bazhay_user.is_premium:
-            return super().get_queryset().filter(wish__reservations__is_active=True)
-        return super().get_queryset().filter(bazhay_user=bazhay_user)
+        user = self.request.user
+        if user.is_premium:
+            return super().get_queryset().filter(is_active=True)
+        return super().get_queryset().filter(bazhay_user=user)
 
-    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated, IsPremium])
-    def wish_reservations(self, request: Request, pk: int = None) -> Response:
-        wish_id = pk
-        reservations = self.get_queryset().filter(wish_id=wish_id, is_active=True)
-        serializer = self.get_serializer(reservations, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def list(self, request, *args, **kwargs):
+        if request.user.is_premium:
+            queryset = self.get_queryset()
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated, IsPremium])
-    def select_giver(self, request: Request, pk: int = None) -> Response:
+        return super().list(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user.is_premium or instance.bazhay_user == request.user:
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+
+        return Response({"detail": "You do not have permission to perform this action."}, status=403)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def select_giver(self, request, pk=None):
+        """Allow a premium user to choose the person who will grant the wish."""
         reservation = self.get_object()
-        if reservation.wish.author != request.user:
-            return Response({"detail": "Only the wish author can select a giver."}, status=status.HTTP_403_FORBIDDEN)
 
-        selected_giver_id = request.data.get('selected_giver')
-        selected_giver = BazhayUser.objects.filter(id=selected_giver_id).first()
+        if not request.user.is_premium:
+            return Response({"detail": "Only premium users can select a giver."}, status=403)
 
-        if not selected_giver:
-            return Response({"detail": "Selected giver not found."}, status=status.HTTP_404_NOT_FOUND)
+        selected_giver_id = request.data.get('giver_id')
+
+        try:
+            selected_giver = BazhayUser.objects.get(id=selected_giver_id)
+        except BazhayUser.DoesNotExist:
+            return Response({"detail": "Selected giver does not exist."}, status=404)
+
+        if not Reservation.objects.filter(wish=reservation.wish, bazhay_user=selected_giver, is_active=True).exists():
+            return Response({"detail": "The selected giver does not have an active reservation for this wish."},
+                            status=400)
 
         reservation.selected_giver = selected_giver
         reservation.is_active = False
         reservation.save()
 
-        return Response({"message": "Selected giver has been set."}, status=status.HTTP_200_OK)
+        return Response({"detail": "Giver has been selected successfully."})
 
+    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def get_reservations_for_wish(self, request, pk=None):
+        """Get all users who want to reserve a certain wish."""
+        try:
+            wish = Wish.objects.get(id=pk)
+        except Wish.DoesNotExist:
+            return Response({"detail": "Wish not found."}, status=404)
+
+        reservations = Reservation.objects.filter(wish=wish, is_active=True)
+        serializer = self.get_serializer(reservations, many=True)
+
+        return Response(serializer.data)
 
 
 class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
