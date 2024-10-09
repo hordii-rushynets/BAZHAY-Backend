@@ -89,28 +89,34 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
         return str(self.email)
 
 
-class Address(models.Model):
-    user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='address')
-    country = models.CharField(max_length=100, blank=True)
-    region = models.CharField(max_length=100, blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    street = models.CharField(max_length=100, blank=True)
-    post_index = models.CharField(max_length=50, blank=True)
-    full_name = models.CharField(max_length=200, blank=True)
-    phone_number = models.CharField(max_length=100, blank=True)
+class BaseAddress(models.Model):
+    """ Abstract model representing a basic address with user, country, city, full name, and phone number fields.
+    This model serves as a base for more specific address types."""
+    user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE)
+    country = models.CharField(max_length=100, blank=True, default='')
+    city = models.CharField(max_length=100, blank=True, default='')
+    full_name = models.CharField(max_length=200, blank=True, default='')
+    phone_number = models.CharField(max_length=100, blank=True, default='')
+
+    class Meta:
+        abstract = True
+
+
+class Address(BaseAddress):
+    """Model representing a more detailed address, extending BaseAddress to include region, street, and post index."""
+    region = models.CharField(max_length=100, blank=True, default='')
+    street = models.CharField(max_length=100, blank=True, default='')
+    post_index = models.CharField(max_length=50, blank=True, default='')
 
     def __str__(self):
         return f"{self.user.username}, {self.country} {self.region} {self.city}"
 
 
-class PostAddress(models.Model):
-    user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='post_address')
-    country = models.CharField(max_length=100, blank=True)
-    post_service = models.CharField(max_length=100, blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    nearest_branch = models.CharField(max_length=100, blank=True)
-    full_name = models.CharField(max_length=200, blank=True)
-    phone_number = models.CharField(max_length=100, blank=True)
+class PostAddress(BaseAddress):
+    """Model representing a postal address, extending BaseAddress to include post service and nearest branch."""
+    post_service = models.CharField(max_length=100, blank=True, default='')
+    nearest_branch = models.CharField(max_length=100, blank=True, default='')
 
     def __str__(self):
         return f"{self.user.username}, {self.nearest_branch}"
+

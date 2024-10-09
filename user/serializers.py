@@ -92,14 +92,7 @@ class ConfirmCodeSerializer(serializers.Serializer):
 
 
 class AddressSerializer(serializers.ModelSerializer):
-    country = serializers.CharField(required=False)
-    region = serializers.CharField(required=False)
-    city = serializers.CharField(required=False)
-    street = serializers.CharField(required=False)
-    post_index = serializers.CharField(required=False)
-    full_name = serializers.CharField(required=False)
-    phone_number = serializers.CharField(required=False)
-
+    """Serializer for the Address model."""
     class Meta:
         model = Address
         fields = ['id', 'country', 'region', 'city', 'street', 'post_index', 'full_name', 'phone_number']
@@ -107,13 +100,7 @@ class AddressSerializer(serializers.ModelSerializer):
 
 
 class PostAddressSerializer(serializers.ModelSerializer):
-    country = serializers.CharField(required=False)
-    post_service = serializers.CharField(required=False)
-    city = serializers.CharField(required=False)
-    nearest_branch = serializers.CharField(required=False)
-    full_name = serializers.CharField(required=False)
-    phone_number = serializers.CharField(required=False)
-
+    """Serializer for the PostAddress model."""
     class Meta:
         model = PostAddress
         fields = ['id', 'country', 'post_service', 'city', 'nearest_branch', 'full_name', 'phone_number']
@@ -439,10 +426,6 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
     Serializer for the BazhayUser model to return user information including
     whether the requesting user is subscribed to the given user.
 
-    Methods:
-        get_is_subscribed(obj: BazhayUser) -> bool:
-            Returns a boolean indicating whether the current user
-            (from the request context) is subscribed to the provided BazhayUser object.
     """
     is_subscribed = serializers.SerializerMethodField()
     subscriber = serializers.SerializerMethodField()
