@@ -13,9 +13,8 @@ currency_choices = [
 access_type_choices = [
         ('subscribers', 'Subscribers'),
         ('everyone', 'Everyone'),
-        ('only_me', 'Only_me'),
+        ('only_me', 'Only me'),
+        ('selected_users', 'Selected User')
 ]
-
-access_type_list = [_[0] for _ in access_type_choices]
 
 valid_mime_types = ['video/mp4', 'video/avi', 'video/mov', 'video/mpeg']
