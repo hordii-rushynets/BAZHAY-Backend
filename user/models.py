@@ -91,13 +91,13 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
 
 class Address(models.Model):
     user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='address')
-    country = models.CharField(max_length=100)
-    region = models.CharField(max_length=100)
-    city = models.CharField(max_length=100)
-    street = models.CharField(max_length=100)
-    post_index = models.CharField(max_length=50)
-    full_name = models.CharField(max_length=200)
-    phone_number = models.CharField(max_length=100)
+    country = models.CharField(max_length=100, blank=True)
+    region = models.CharField(max_length=100, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    street = models.CharField(max_length=100, blank=True)
+    post_index = models.CharField(max_length=50, blank=True)
+    full_name = models.CharField(max_length=200, blank=True)
+    phone_number = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         return f"{self.user.username}, {self.country} {self.region} {self.city}"
