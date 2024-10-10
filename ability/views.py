@@ -21,7 +21,7 @@ from .serializers import (WishSerializer,
                           AccessToViewWishUser,
                           AccessToViewWishSerializer)
 
-from .filters import WishFilter
+from .filters import WishFilter, AccessToWishFilter
 from .services import PopularRequestService
 from .choices import access_type_choices
 
@@ -416,6 +416,8 @@ class AccessToViewWishViewSet(viewsets.ModelViewSet):
     queryset = AccessToViewWish.objects.all()
     serializer_class = AccessToViewWishSerializer
     permission_classes = [permissions.IsAuthenticated, IsPremium]
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = AccessToWishFilter
 
     def get_queryset(self):
         return self.queryset.filter(wish__author=self.request.user)
