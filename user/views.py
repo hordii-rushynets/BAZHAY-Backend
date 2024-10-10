@@ -368,32 +368,75 @@ class ListUserViewSet(viewsets.ReadOnlyModelViewSet):
         return self.queryset.exclude(id=self.request.user.id)
 
 
-class AddressViewSet(viewsets.ModelViewSet):
+class BaseAddressViewSet(viewsets.ModelViewSet):
+    """Base viewset for handling address-related operations for authenticated users."""
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'put', 'patch', 'delete']
+
+    def get_queryset(self):
+        """
+        Returns the queryset filtered by the currently authenticated user.
+        :return: QuerySet The queryset containing address instances related to the current user.
+        """
+        return self.queryset.filter(user=self.request.user)
+
+    def create_default_address(self):
+        """This should be overridden in subclasses for a particular model."""
+        raise NotImplementedError('create_default_address method should be implemented in subclasses.')
+
+    def retrieve(self, request: Request, *args, **kwargs) -> Response:
+        """
+        Retrieves the first address associated with the authenticated user, or creates a default
+        one if no address exists.
+
+        :returns:  A Response object containing the serialized address data.
+        """
+        address = self.get_queryset().first()
+
+        if not address:
+            address = self.create_default_address()
+
+        serializer = self.get_serializer(address)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def list(self, request: Request, *args, **kwargs) -> Response:
+        """
+        Lists all addresses associated with the authenticated user. If no addresses exist, it
+        creates a default address and returns it.
+
+        :returns: A Response object containing serialized address data.
+        """
+        queryset = self.get_queryset()
+
+        if not queryset.exists():
+            address = self.create_default_address()
+            queryset = self.queryset.filter(pk=address.pk)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AddressViewSet(BaseAddressViewSet):
+    """Viewset for handling CRUD operations related to the Address model."""
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
-    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return Address.objects.filter(user=self.request.user)
+    def create_default_address(self) -> Address:
+        """Creates a default Address instance for the current authenticated user.
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        :returns: A newly created Address instance."""
+        return Address.objects.create(user=self.request.user)
 
 
-class PostAddressViewSet(viewsets.ModelViewSet):
+class PostAddressViewSet(BaseAddressViewSet):
+    """Viewset for handling CRUD operations related to the PostAddress model."""
     queryset = PostAddress.objects.all()
     serializer_class = PostAddressSerializer
-    permission_classes = [IsAuthenticated, IsOwner]
 
-    def get_queryset(self):
-        return PostAddress.objects.filter(user=self.request.user)
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    def create_default_address(self) -> PostAddress:
+        """
+        Creates a default PostAddress instance for the current authenticated user.
+        :returns: A newly created PostAddress instance.
+        """
+        return PostAddress.objects.create(user=self.request.user)
 
