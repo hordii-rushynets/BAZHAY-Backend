@@ -163,7 +163,7 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
     def list(self, request, *args, **kwargs):
-        self.queryset.exclude(author=self.request.user)
+        self.queryset = self.get_queryset().exclude(author=self.request.user)
         return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])

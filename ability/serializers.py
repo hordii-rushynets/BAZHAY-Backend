@@ -361,6 +361,8 @@ class AccessToViewWishSerializer(serializers.ModelSerializer):
             user = BazhayUser.objects.get(id=user_id)
             AccessToViewWishUser.objects.create(user=user, access_to_view_wish=access_to_view_wish)
 
+        AccessToViewWishUser.objects.create(user=self.context['request'].user, access_to_view_wish=access_to_view_wish)
+
         return access_to_view_wish
 
     def update(self, instance, validated_data):
@@ -371,6 +373,8 @@ class AccessToViewWishSerializer(serializers.ModelSerializer):
         for user_id in user_ids:
             user = BazhayUser.objects.get(id=user_id)
             AccessToViewWishUser.objects.create(user=user, access_to_view_wish=instance)
+
+        AccessToViewWishUser.objects.create(user=self.context['request'].user, access_to_view_wish=instance)
 
         instance.save()
         return instance
