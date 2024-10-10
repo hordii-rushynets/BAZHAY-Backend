@@ -34,3 +34,17 @@ class IsOwner(BasePermission):
     """
     def has_object_permission(self, request, view, obj):
         return obj.user == request.user
+
+
+class IsPremium(BasePermission):
+    """
+    Access only for premium users.
+    """
+    def has_permission(self, request, view):
+        if request.user.is_authenticated:
+            try:
+                premium = request.user.premium
+                return premium.is_active
+            except:
+                return False
+        return False

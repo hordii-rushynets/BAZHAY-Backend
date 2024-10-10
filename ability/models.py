@@ -84,3 +84,14 @@ class Reservation(models.Model):
 
     def __str__(self):
         return f"{self.bazhay_user} reservation {self.wish.name}"
+
+
+class AccessToViewWish(models.Model):
+    wish = models.OneToOneField(Wish, on_delete=models.CASCADE, related_name='access_to_view_wish',
+                                null=True, blank=True)
+
+
+class AccessToViewWishUser(models.Model):
+    user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='access_to_view_wish_users')
+    access_to_view_wish = models.ForeignKey(AccessToViewWish, on_delete=models.CASCADE, related_name='access_users')
+
