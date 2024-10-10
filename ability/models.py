@@ -10,6 +10,11 @@ from user.models import BazhayUser
 from brand.models import Brand
 from news.models import News
 
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 
 def validate_video_file(file: Optional[UploadedFile]) -> None:
     """
@@ -81,11 +86,11 @@ class Reservation(models.Model):
     """
     Reservation of a wish for a users.
     """
-    wish = models.ForeignKey(Wish, on_delete=models.CASCADE, related_name='reservation')
+    wish = models.OneToOneField(Wish, on_delete=models.CASCADE, related_name='reservation')
     selected_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='reservation', null=True)
 
     def is_active(self):
-        return True if self.selected_user else False
+        return False if self.selected_user else True
 
     def __str__(self):
         return f"wish {self.wish.name} reservation to {self.selected_user.username}"
@@ -97,3 +102,70 @@ class CandidatesForReservation(models.Model):
 
     def __str__(self):
         return f"reservation {self.reservation.wish.name} candidates {self.bazhay_user.username}"
+
+
+@receiver(post_save, sender=Reservation)
+def send_notification_on_user_select(sender, instance, **kwargs):
+    if instance.selected_user:
+        if not instance.wish.author.is_premium():
+            channel_layer = get_channel_layer()
+
+            # For the author of the wish
+            message_uk = f"Твоє бажання {instance.wish.name} зарезервували і незабаром воно виповниться!"
+            message_en = f""
+            button = {'button_1': create_button('Подивитись, хто хоче виповнити моє бажання',
+                                    f'/api/wish/reservation/wish={instance.wish.id}')}
+
+            notification_data_to_autor = create_message(button, message_uk, message_en)
+
+            async_to_sync(channel_layer.group_send)(
+                f"user_{instance.wish.author.id}",
+                {
+                    'type': 'send_notification',
+                    'message': notification_data_to_autor
+                }
+            )
+
+            # For the one who reserved
+            message_uk = f"Ти зарезервував бажання {instance.wish.author.username} @{instance.wish.name} і зовсім скоро ощасливиш його подарунком!"
+            message_en = f""
+            button = {'button_1': ''}
+
+            notification_data_to_reserved = create_message(button, message_uk, message_en)
+
+            async_to_sync(channel_layer.group_send)(
+                f"user_{instance.selected_user.id}",
+                {
+                    'type': 'send_notification',
+                    'message': notification_data_to_reserved
+                }
+            )
+
+
+@receiver(post_save, sender=CandidatesForReservation)
+def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
+    if created:
+        if instance.reservation.wish.author.is_premium():
+            channel_layer = get_channel_layer()
+
+            message_uk = f"Твоє бажання {instance.reservation.wish.name} хоче зарезервувати @{instance.bazhay_user}. Ти хочеш, щоб цей користувач виконав його?"
+            message_en = f""
+            button = {'button_1': create_button('Так', f'/api/wish/reservation/{instance.id}/select_user/', 'candidate_id'),}
+
+            notification_data_to_author = create_message(button, message_uk, message_en)
+
+            async_to_sync(channel_layer.group_send)(
+                f"user_{instance.reservation.wish.author.id}",
+                {
+                    'type': 'send_notification',
+                    'message': notification_data_to_author
+                }
+            )
+
+
+def create_button(text, url, param: str = ''):
+    return {'text': text, 'request': {'url': url, 'param': param}}
+
+
+def create_message(button: dict, text_en: str = "", text_uk: str = "",):
+    return {'message_en': text_en, 'message_uk': text_uk,'button': button}

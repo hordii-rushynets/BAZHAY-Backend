@@ -1,7 +1,6 @@
 from rest_framework import viewsets, permissions, mixins
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import Serializer
 from rest_framework.request import Request
 from rest_framework import status
@@ -13,7 +12,7 @@ from django.db.models.query import QuerySet
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Wish, Reservation
+from .models import Wish, Reservation, CandidatesForReservation
 from .serializers import (WishSerializer,
                           ReservationSerializer,
                           VideoSerializer,
@@ -25,9 +24,8 @@ from .services import PopularRequestService
 
 from subscription.models import Subscription
 from user.models import BazhayUser
-from user.serializers import ReturnBazhayUserSerializer
 from brand.models import Brand
-from permission.permissions import IsPremium
+from permission.permissions import IsRegisteredUser, IsPremium
 
 
 SECONDS_IN_A_DAY = 86400
@@ -187,10 +185,6 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
         wish.save()
 
         return Response(status=status.HTTP_200_OK)
-
-
-class ReservationViewSet(viewsets.ModelViewSet):
-    pass
 
 
 class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
@@ -385,3 +379,28 @@ class QueryView(viewsets.mixins.CreateModelMixin, viewsets.mixins.ListModelMixin
 
         self.service.set(query)
         return Response({'message': 'Query saved successfully'}, status=status.HTTP_201_CREATED)
+
+
+class ReservationViewSet(viewsets.ModelViewSet):
+    queryset = Reservation.objects.all()
+    serializer_class = ReservationSerializer
+    permission_classes = [permissions.IsAuthenticated, IsRegisteredUser]
+
+    def get_queryset(self):
+        return self.queryset.filter(wish__author=self.request.user)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated, IsPremium])
+    def select_user(self, request, pk=None):
+        reservation = self.get_object()
+
+        candidate_id = request.data.get('candidate_id')
+        try:
+            candidate = CandidatesForReservation.objects.get(id=candidate_id, reservation=reservation)
+        except CandidatesForReservation.DoesNotExist:
+            return Response({'detail': 'Candidate not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        reservation.selected_user = candidate.bazhay_user
+        reservation.save()
+
+        return Response({'detail': 'Candidate selected successfully.'}, status=status.HTTP_200_OK)
+

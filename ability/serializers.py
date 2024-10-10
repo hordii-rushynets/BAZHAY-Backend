@@ -4,7 +4,7 @@ from django.db.models import Q
 
 from rest_framework import serializers
 
-from .models import Wish, Reservation
+from .models import Wish, Reservation, CandidatesForReservation
 
 from user.serializers import ReturnBazhayUserSerializer
 from brand.serializers import BrandSerializer
@@ -102,11 +102,6 @@ class WishSerializer(serializers.ModelSerializer):
             bool: True if the wish belongs to the requesting user, otherwise False.
         """
         return obj.author == self.context['request'].user
-
-
-class ReservationSerializer(serializers.ModelSerializer):
-    """Serializer to reservation of a wish."""
-    pass
 
 
 class VideoSerializer(serializers.ModelSerializer):
@@ -242,4 +237,54 @@ class QuerySerializer(serializers.Serializer):
     """Serializer to query."""
     query = serializers.CharField(max_length=255, required=False)
     count = serializers.IntegerField(read_only=True)
+
+
+class CandidatesForReservationSerializer(serializers.ModelSerializer):
+    bazhay_user = ReturnBazhayUserSerializer(read_only=True)
+    class Meta:
+        model = CandidatesForReservation
+        fields = ['bazhay_user']
+
+
+class ReservationSerializer(serializers.ModelSerializer):
+    candidates = CandidatesForReservationSerializer(many=True, read_only=True)
+    selected_user = ReturnBazhayUserSerializer(read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = ['wish', 'selected_user', 'candidates']
+        read_only_fields = ['selected_user']
+
+    def validate(self, data):
+        wish = data.get('wish')
+        user = self.context['request'].user
+
+        if Reservation.objects.filter(wish=wish).exists():
+            reservation = Reservation.objects.get(wish=wish)
+            if not reservation.is_active:
+                raise serializers.ValidationError(detail="It's already reserved for someone.")
+            if CandidatesForReservation.objects.filter(reservation=reservation, bazhay_user=user).exists():
+                raise serializers.ValidationError(detail="The user is already a candidate for this reservation.")
+
+        if wish.author == user:
+            raise serializers.ValidationError(detail="You cannot reserve your own wish.")
+
+        return data
+
+    def create(self, validated_data):
+        wish = validated_data.get('wish')
+        user = self.context['request'].user
+
+        reservation, created = Reservation.objects.get_or_create(wish=wish)
+
+        if reservation.wish.author.is_premium():
+            CandidatesForReservation.objects.create(
+                reservation=reservation,
+                bazhay_user=user
+            )
+        else:
+            reservation.selected_user = user
+        reservation.save()
+
+        return reservation
 

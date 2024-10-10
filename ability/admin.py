@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Wish, Reservation
+from .models import Wish, Reservation, CandidatesForReservation
 
 
 @admin.register(Wish)
@@ -21,4 +21,21 @@ class WishAdmin(admin.ModelAdmin):
     exclude = ('name', 'description', 'additional_description')
 
 
-admin.site.register(Reservation)
+class CandidatesForReservationInline(admin.TabularInline):
+    model = CandidatesForReservation
+    extra = 1
+
+
+@admin.register(Reservation)
+class ReservationAdmin(admin.ModelAdmin):
+    list_display = ['wish', 'selected_user', 'is_active']
+    inlines = [CandidatesForReservationInline]
+
+    def is_active(self, obj):
+        return obj.is_active()
+    is_active.boolean = True
+
+
+@admin.register(CandidatesForReservation)
+class CandidatesForReservationAdmin(admin.ModelAdmin):
+    list_display = ['reservation', 'bazhay_user']
