@@ -106,56 +106,7 @@ class WishSerializer(serializers.ModelSerializer):
 
 class ReservationSerializer(serializers.ModelSerializer):
     """Serializer to reservation of a wish."""
-    bazhay_user = ReturnBazhayUserSerializer(read_only=True)
-    wish = WishSerializer(read_only=True)
-    wish_id = serializers.PrimaryKeyRelatedField(queryset=Wish.objects.all(), write_only=True, source='wish')
-
-    class Meta:
-        model = Reservation
-        fields = ['id', 'bazhay_user', 'wish', 'wish_id', 'is_active', 'selected_giver']
-        read_only_fields = ['id', 'bazhay_user']
-
-    def validate(self, attrs: dict) -> dict:
-        """
-        Data validation.
-
-        :param attrs: Data to be validated.
-        :return: Validated data.
-        """
-        user = self.context['request'].user
-        wish = attrs.get('wish')
-
-        if wish.author == user:
-            raise serializers.ValidationError("You can't reserve your own wishes.")
-
-        if Reservation.objects.filter(wish=wish, bazhay_user=user).exists():
-            raise serializers.ValidationError("This wish is already reserved by you.")
-
-        if Reservation.objects.filter(wish=wish).exists().is_active is False:
-            raise serializers.ValidationError("This wish is already reserved by other user.")
-
-        return attrs
-
-    def create(self, validated_data: dict) -> Reservation:
-        """
-        Creating a backup.
-        If the user is not a premium user, it is reserved for the first one.
-
-        :param validated_data: Validated data.
-        :return: Reservation
-        """
-        user = self.context['request'].user
-
-        reservation = Reservation.objects.create(bazhay_user=user, **validated_data)
-
-        if not user.is_premium:
-            first_reservation = Reservation.objects.filter(wish=reservation.wish).first()
-            if first_reservation:
-                reservation.selected_giver = first_reservation.bazhay_user
-                reservation.is_active = False
-                reservation.save()
-
-        return reservation
+    pass
 
 
 class VideoSerializer(serializers.ModelSerializer):

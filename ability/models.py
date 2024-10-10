@@ -66,8 +66,7 @@ class Wish(models.Model):
         If the wish has an author, the author's email is returned. If a brand author is present,
         the brand's name is returned. If neither is available, a dash ('-') is returned.
 
-        Returns:
-            str: The email of the author, the brand name, or a dash ('-').
+        :returns (str): The email of the author, the brand name, or a dash ('-').
         """
         if self.author:
             return self.author.email
@@ -80,13 +79,21 @@ class Wish(models.Model):
 
 class Reservation(models.Model):
     """
-    Reservation of a wish for a user.
+    Reservation of a wish for a users.
     """
-    bazhay_user = models.ForeignKey(BazhayUser, related_name='reservations', on_delete=models.CASCADE)
-    wish = models.ForeignKey(Wish, related_name='reservations', on_delete=models.CASCADE)
-    is_active = models.BooleanField(default=True)
-    selected_giver = models.ForeignKey(BazhayUser, null=True, blank=True, related_name='selected_giver', on_delete=models.SET_NULL)
+    wish = models.ForeignKey(Wish, on_delete=models.CASCADE, related_name='reservation')
+    selected_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='reservation', null=True)
+
+    def is_active(self):
+        return True if self.selected_user else False
 
     def __str__(self):
-        return f"{self.bazhay_user} reservation {self.wish.name}"
+        return f"wish {self.wish.name} reservation to {self.selected_user.username}"
 
+
+class CandidatesForReservation(models.Model):
+    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, related_name='candidates')
+    bazhay_user = models.OneToOneField(BazhayUser, on_delete=models.CASCADE, related_name='candidates')
+
+    def __str__(self):
+        return f"reservation {self.reservation.wish.name} candidates {self.bazhay_user.username}"

@@ -166,7 +166,7 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
     def list(self, request, *args, **kwargs):
-        self.queryset.exclude(author=self.request.user)
+        self.queryset.exclude(author=self.request.user).order_by('-views_number')
         return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
@@ -190,69 +190,7 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ReservationViewSet(viewsets.ModelViewSet):
-    queryset = Reservation.objects.all()
-    serializer_class = ReservationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self) -> QuerySet:
-        user = self.request.user
-        if user.is_premium:
-            return super().get_queryset().filter(is_active=True)
-        return super().get_queryset().filter(bazhay_user=user)
-
-    def list(self, request, *args, **kwargs):
-        if request.user.is_premium:
-            queryset = self.get_queryset()
-            serializer = self.get_serializer(queryset, many=True)
-            return Response(serializer.data)
-
-        return super().list(request, *args, **kwargs)
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if request.user.is_premium or instance.bazhay_user == request.user:
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data)
-
-        return Response({"detail": "You do not have permission to perform this action."}, status=403)
-
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
-    def select_giver(self, request, pk=None):
-        """Allow a premium user to choose the person who will grant the wish."""
-        reservation = self.get_object()
-
-        if not request.user.is_premium:
-            return Response({"detail": "Only premium users can select a giver."}, status=403)
-
-        selected_giver_id = request.data.get('giver_id')
-
-        try:
-            selected_giver = BazhayUser.objects.get(id=selected_giver_id)
-        except BazhayUser.DoesNotExist:
-            return Response({"detail": "Selected giver does not exist."}, status=404)
-
-        if not Reservation.objects.filter(wish=reservation.wish, bazhay_user=selected_giver, is_active=True).exists():
-            return Response({"detail": "The selected giver does not have an active reservation for this wish."},
-                            status=400)
-
-        reservation.selected_giver = selected_giver
-        reservation.is_active = False
-        reservation.save()
-
-        return Response({"detail": "Giver has been selected successfully."})
-
-    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated])
-    def get_reservations_for_wish(self, request, pk=None):
-        """Get all users who want to reserve a certain wish."""
-        try:
-            wish = Wish.objects.get(id=pk)
-        except Wish.DoesNotExist:
-            return Response({"detail": "Wish not found."}, status=404)
-
-        reservations = Reservation.objects.filter(wish=wish, is_active=True)
-        serializer = self.get_serializer(reservations, many=True)
-
-        return Response(serializer.data)
+    pass
 
 
 class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
