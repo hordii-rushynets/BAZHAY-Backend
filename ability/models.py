@@ -89,7 +89,7 @@ class Reservation(models.Model):
     Reservation of a wish for a users.
     """
     wish = models.OneToOneField(Wish, on_delete=models.CASCADE, related_name='reservation')
-    selected_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='reservation', null=True)
+    selected_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='reservation', null=True, blank=True)
 
     def is_active(self):
         return False if self.selected_user else True
