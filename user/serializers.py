@@ -465,6 +465,13 @@ class BazhayUserDeletePhotoSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         if 'photo' in validated_data:
             old_photo = instance.photo
-            if old_photo and old_photo != validated_data.get('photo'):
+
+            if old_photo:
                 old_photo.delete(save=False)
+
+            if validated_data.get('photo') is None:
+                instance.photo = None
+
         return super().update(instance, validated_data)
+
+
