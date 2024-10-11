@@ -115,8 +115,7 @@ def send_notification_on_user_select(sender, instance, **kwargs):
             # For the author of the wish
             message_uk = f"Твоє бажання {instance.wish.name} зарезервували і незабаром воно виповниться!"
             message_en = f""
-            button = [{'button_1': create_button('Подивитись, хто хоче виповнити моє бажання',
-                                    f'/api/wish/reservation/wish={instance.wish.id}')}]
+            button = [create_button('Подивитись, хто хоче виповнити моє бажання', f'/api/wish/reservation/wish={instance.wish.id}')]
 
             notification_data_to_autor = create_message(button, message_uk, message_en)
 
@@ -167,8 +166,8 @@ def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
 
             message_uk = f"Твоє бажання {instance.reservation.wish.name} хоче зарезервувати @{instance.bazhay_user.username}. Ти хочеш, щоб цей користувач виконав його?"
             message_en = f""
-            button = [{'button_1': create_button('Так', f'/api/wish/reservation/{instance.id}/select_user/', 'candidate_id', instance.bazhay_user.id)},
-                      {'button_2': create_button('Ні')}]
+            button = [create_button('Так', f'/api/wish/reservation/{instance.id}/select_user/', 'candidate_id', instance.bazhay_user.id),
+                      create_button('Ні')]
 
             notification_data_to_author = create_message(button, message_uk, message_en)
 
