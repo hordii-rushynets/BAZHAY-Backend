@@ -115,8 +115,8 @@ def send_notification_on_user_select(sender, instance, **kwargs):
             # For the author of the wish
             message_uk = f"Твоє бажання {instance.wish.name} зарезервували і незабаром воно виповниться!"
             message_en = f""
-            button = {'button_1': create_button('Подивитись, хто хоче виповнити моє бажання',
-                                    f'/api/wish/reservation/wish={instance.wish.id}')}
+            button = [{'button_1': create_button('Подивитись, хто хоче виповнити моє бажання',
+                                    f'/api/wish/reservation/wish={instance.wish.id}')}]
 
             notification_data_to_autor = create_message(button, message_uk, message_en)
 
@@ -138,7 +138,7 @@ def send_notification_on_user_select(sender, instance, **kwargs):
             # For the one who reserved
             message_uk = f"Ти зарезервував бажання {instance.wish.author.username} @{instance.wish.name} і зовсім скоро ощасливиш його подарунком!"
             message_en = f""
-            button = {'button_1': create_button()}
+            button = []
 
             notification_data_to_reserved = create_message(button, message_uk, message_en)
 
@@ -167,7 +167,8 @@ def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
 
             message_uk = f"Твоє бажання {instance.reservation.wish.name} хоче зарезервувати @{instance.bazhay_user}. Ти хочеш, щоб цей користувач виконав його?"
             message_en = f""
-            button = {'button_1': create_button('Так', f'/api/wish/reservation/{instance.id}/select_user/', 'candidate_id'),}
+            button = [{'button_1': create_button('Так', f'/api/wish/reservation/{instance.id}/select_user/', 'candidate_id'),},
+                      {'button_2': create_button('Ні')}]
 
             notification_data_to_author = create_message(button, message_uk, message_en)
 
@@ -192,5 +193,5 @@ def create_button(text: str = '', url: str = '', param: str = ''):
     return {'text': text, 'request': {'url': url, 'param': param}}
 
 
-def create_message(button: dict, text_en: str = "", text_uk: str = "",):
+def create_message(button: list, text_en: str = "", text_uk: str = "",):
     return {'message_en': text_en, 'message_uk': text_uk, 'button': button}

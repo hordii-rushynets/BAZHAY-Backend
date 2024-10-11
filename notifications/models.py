@@ -17,7 +17,7 @@ class Notification(models.Model):
     send_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     users = models.ManyToManyField(User, related_name='notifications', blank=True)
-    button = models.JSONField(default=dict, blank=True, null=True)
+    button = models.JSONField(default=list, blank=True, null=True)
 
     def __str__(self):
         return f'Notification: {self.message[:20]} at {self.send_at}'
