@@ -60,6 +60,7 @@ class Wish(models.Model):
     is_fully_created = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     views_number = models.PositiveIntegerField(blank=True, null=True, default=0)
+    is_fulfilled = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         """Return the name of the wish."""

@@ -1,6 +1,5 @@
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.db.models import Q
 
 from rest_framework import serializers
 
@@ -35,7 +34,7 @@ class WishSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'name_en', 'name_uk', 'photo', 'video', 'price', 'link', 'description',
                   'description_en', 'description_uk',
                   'additional_description', 'additional_description_en', 'additional_description_uk', 'access_type', 'currency', 'created_at', 'is_fully_created',
-                  'is_reservation', 'is_user_create', 'is_your_wish', 'is_reserved_by_me', 'image_size', 'author', 'brand_author',
+                  'is_reservation', 'is_user_create', 'is_your_wish', 'is_reserved_by_me', 'is_fulfilled', 'image_size', 'author', 'brand_author',
                   'news_author']
         read_only_fields = ['id', 'author', 'created_at', 'brand_author', 'news_author']
 
@@ -210,23 +209,6 @@ class WishSerializerForNotUser(serializers.ModelSerializer):
     This serializer is used to convert Wish model instances into JSON format and vice versa.
     It includes the fields that are relevant for views where the user is not authenticated or does not
     need to see or modify all the fields.
-
-    Attributes:
-        id (IntegerField): Unique identifier for the wish.
-        name (CharField): Name or title of the wish.
-        photo (ImageField): Photo associated with the wish.
-        video (URLField): Video URL related to the wish.
-        price (DecimalField): Price of the wish.
-        link (URLField): External link associated with the wish.
-        description (CharField): Description of the wish.
-        additional_description (CharField): Additional description for more details.
-        currency (CharField): Currency code for the price.
-        created_at (DateTimeField): Timestamp when the wish was created.
-        image_size (IntegerField): Size of the wish's image (if applicable).
-
-    Meta:
-        model: The model associated with this serializer.
-        fields: List of fields to be included in the serialized representation.
     """
     class Meta:
         model = Wish
