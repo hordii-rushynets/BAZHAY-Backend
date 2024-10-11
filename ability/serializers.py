@@ -76,11 +76,10 @@ class WishSerializer(serializers.ModelSerializer):
 
         :returns (bool): True if the wish is reserved, otherwise False.
         """
-        if not Reservation.objects.filter(wish=obj).exists():
-            return False
         reservation = Reservation.objects.filter(wish=obj).first()
-
-        return reservation.is_active()
+        if reservation.selected_user:
+            return True
+        return False
 
     def get_is_reserved_by_me(self, obj):
         """
