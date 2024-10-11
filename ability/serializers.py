@@ -28,13 +28,14 @@ class WishSerializer(serializers.ModelSerializer):
     is_reservation = serializers.SerializerMethodField()
     is_user_create = serializers.SerializerMethodField()
     is_your_wish = serializers.SerializerMethodField()
+    is_reserved_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = Wish
         fields = ['id', 'name', 'name_en', 'name_uk', 'photo', 'video', 'price', 'link', 'description',
                   'description_en', 'description_uk',
                   'additional_description', 'additional_description_en', 'additional_description_uk', 'access_type', 'currency', 'created_at', 'is_fully_created',
-                  'is_reservation', 'is_user_create', 'is_your_wish', 'image_size', 'author', 'brand_author',
+                  'is_reservation', 'is_user_create', 'is_your_wish', 'is_reserved_by_me', 'image_size', 'author', 'brand_author',
                   'news_author']
         read_only_fields = ['id', 'author', 'created_at', 'brand_author', 'news_author']
 
