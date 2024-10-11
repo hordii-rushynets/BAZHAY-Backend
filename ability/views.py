@@ -400,7 +400,7 @@ class ReservationViewSet(viewsets.ModelViewSet):
 
         candidate_id = request.data.get('candidate_id')
         try:
-            candidate = CandidatesForReservation.objects.get(id=candidate_id, reservation=reservation)
+            candidate = CandidatesForReservation.objects.get(bazhay_user=candidate_id, reservation=reservation)
         except CandidatesForReservation.DoesNotExist:
             return Response({'detail': 'Candidate not found.'}, status=status.HTTP_404_NOT_FOUND)
 

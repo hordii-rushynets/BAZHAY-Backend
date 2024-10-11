@@ -38,7 +38,4 @@ class IsOwner(BasePermission):
 
 class IsPremium(BasePermission):
     def has_object_permission(self, request, view, obj):
-        try:
-            return obj.premium.is_active
-        except:
-            return False
+        return request.user.is_premium()

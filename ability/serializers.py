@@ -248,7 +248,7 @@ class ReservationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Reservation
-        fields = ['wish', 'selected_user', 'candidates']
+        fields = ['id', 'wish', 'selected_user', 'candidates']
         read_only_fields = ['selected_user']
 
     def validate(self, data):
