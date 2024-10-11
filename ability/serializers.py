@@ -311,4 +311,3 @@ class QuerySerializer(serializers.Serializer):
     """Serializer to query."""
     query = serializers.CharField(max_length=255, required=False)
     count = serializers.IntegerField(read_only=True)
-

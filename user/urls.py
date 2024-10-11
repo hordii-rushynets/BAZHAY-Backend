@@ -11,7 +11,8 @@ from .views import (AuthViewSet,
                     GoogleLoginView,
                     ListUserViewSet,
                     AddressViewSet,
-                    PostAddressViewSet)
+                    PostAddressViewSet,
+                    BazhayUserDeletePhotoViewSet)
 
 router = DefaultRouter()
 router.register(r'auth', AuthViewSet, basename='auth')
@@ -27,4 +28,6 @@ urlpatterns = router.urls + [
     path('logout/', TokenBlacklistView.as_view(), name='logout'),
     path('user/photo/', UpdateUserPhotoViewSet.as_view({'put': 'update'})),
     path('auth/google/', GoogleLoginView.as_view({"post": "create"}), name='google_auth'),
+    path('user/delete-photo/', BazhayUserDeletePhotoViewSet.as_view({'patch': 'update'}), name='delete-photo'),
+
 ]
