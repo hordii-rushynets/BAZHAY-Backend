@@ -92,6 +92,16 @@ class WishSerializer(serializers.ModelSerializer):
 
         return reservation.selected_user == self.context['request'].user
 
+    def get_is_me_candidates_to_reservation(self, obj):
+        reservation = Reservation.objects.filter(wish=obj).first()
+        if reservation is None:
+            return False
+
+        candidate = CandidatesForReservation.objects.filter(reservation=reservation,
+                                                            bazhay_user=self.context['request'].user).first()
+
+        return True if candidate is not None else False
+
     def get_is_user_create(self, obj: Wish) -> bool:
         """
         Determine if the wish was created by the user.
@@ -237,6 +247,7 @@ class QuerySerializer(serializers.Serializer):
 
 class CandidatesForReservationSerializer(serializers.ModelSerializer):
     bazhay_user = ReturnBazhayUserSerializer(read_only=True)
+
     class Meta:
         model = CandidatesForReservation
         fields = ['bazhay_user']
