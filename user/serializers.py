@@ -460,13 +460,11 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
 class BazhayUserDeletePhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = BazhayUser
-        fields = ['id', 'email', 'username', 'photo']
+        fields = ['photo']
 
     def update(self, instance, validated_data):
         if 'photo' in validated_data:
             old_photo = instance.photo
-            if validated_data.get('photo') is None:
-                if old_photo:
-                    old_photo.delete(save=False)
-                instance.photo = None
+            if old_photo and old_photo != validated_data.get('photo'):
+                old_photo.delete(save=False)
         return super().update(instance, validated_data)
