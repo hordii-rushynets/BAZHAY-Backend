@@ -88,22 +88,22 @@ class Reservation(models.Model):
     """
     Reservation of a wish for a users.
     """
-    wish = models.OneToOneField(Wish, on_delete=models.CASCADE, related_name='reservation')
+    wish = models.ForeignKey(Wish, on_delete=models.CASCADE, related_name='reservation')
     selected_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='reservation', null=True, blank=True)
 
     def is_active(self):
         return False if self.selected_user else True
 
     def __str__(self):
-        return f"wish {self.wish.name} reservation to {self.selected_user.username}"
+        return f"wish {self.wish.name} reservation to {self.selected_user}"
 
 
 class CandidatesForReservation(models.Model):
     reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, related_name='candidates')
-    bazhay_user = models.OneToOneField(BazhayUser, on_delete=models.CASCADE, related_name='candidates')
+    bazhay_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='candidates')
 
     def __str__(self):
-        return f"reservation {self.reservation.wish.name} candidates {self.bazhay_user.username}"
+        return f"reservation {self.reservation.wish.name} candidates {self.bazhay_user}"
 
 
 @receiver(post_save, sender=Reservation)
@@ -127,12 +127,13 @@ def send_notification_on_user_select(sender, instance, **kwargs):
                     'message': notification_data_to_autor
                 }
             )
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 message_uk=message_uk,
                 message_en=message_en,
-                users=instance.wish.author,
                 button=button
             )
+            notification.save()
+            notification.users.set([instance.wish.author])
 
             # For the one who reserved
             message_uk = f"Ти зарезервував бажання {instance.wish.author.username} @{instance.wish.name} і зовсім скоро ощасливиш його подарунком!"
@@ -149,12 +150,13 @@ def send_notification_on_user_select(sender, instance, **kwargs):
                 }
             )
 
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 message_uk=message_uk,
                 message_en=message_en,
-                users=instance.selected_user,
                 button=button
             )
+            notification.save()
+            notification.users.set([instance.selected_user])
 
 
 @receiver(post_save, sender=CandidatesForReservation)
@@ -176,12 +178,14 @@ def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
                     'message': notification_data_to_author
                 }
             )
-            Notification.objects.create(
+
+            notification = Notification.objects.create(
                 message_uk=message_uk,
                 message_en=message_en,
-                users=instance.reservation.wish.author,
                 button=button
             )
+            notification.save()
+            notification.users.set([instance.reservation.wish.author])
 
 
 def create_button(text: str = '', url: str = '', param: str = ''):
