@@ -1,6 +1,6 @@
 import django_filters
 from django.db.models import F, Case, When, ExpressionWrapper, FloatField
-from .models import Wish
+from .models import Wish, Reservation
 from .services import CurrencyService
 
 
@@ -62,3 +62,11 @@ class WishFilter(django_filters.FilterSet):
     class Meta:
         model = Wish
         fields = ['is_fully_created', 'price', 'created', 'access', 'brand', 'user']
+
+
+class ReservationFilter(django_filters.FilterSet):
+    wish = django_filters.NumberFilter(field_name='wish__id')
+
+    class Meta:
+        model = Reservation
+        fields = ['wish']

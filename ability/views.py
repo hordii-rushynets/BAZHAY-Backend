@@ -19,7 +19,7 @@ from .serializers import (WishSerializer,
                           CombinedSearchSerializer,
                           QuerySerializer)
 
-from .filters import WishFilter
+from .filters import WishFilter, ReservationFilter
 from .services import PopularRequestService
 
 from subscription.models import Subscription
@@ -385,6 +385,8 @@ class ReservationViewSet(viewsets.ModelViewSet):
     queryset = Reservation.objects.all()
     serializer_class = ReservationSerializer
     permission_classes = [permissions.IsAuthenticated, IsRegisteredUser]
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = ReservationFilter
 
     def get_queryset(self):
         return self.queryset.filter(wish__author=self.request.user)
