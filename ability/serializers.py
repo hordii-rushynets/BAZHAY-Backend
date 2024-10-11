@@ -83,13 +83,18 @@ class WishSerializer(serializers.ModelSerializer):
         return reservation.is_active()
 
     def get_is_reserved_by_me(self, obj):
-        try:
-            reservation = Reservation.objects.filter(wish=obj).first()
-            if reservation.selected_user == self.context['request'].user:
-                return True
+        """
+        Check if the current user has reserved the wish.
+
+        :args obj (Wish): The wish instance.
+
+        :returns bool: True if the current user has reserved the wish, otherwise False.
+        """
+        reservation = Reservation.objects.filter(wish=obj).first()
+        if reservation is None:
             return False
-        except Reservation.DoesNotExist:
-            return False
+
+        return reservation.selected_user == self.context['request'].user
 
     def get_is_user_create(self, obj: Wish) -> bool:
         """
