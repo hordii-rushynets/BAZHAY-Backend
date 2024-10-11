@@ -189,7 +189,7 @@ def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
 
 
 def create_button(text: str = '', url: str = '', name_param: str = '', value_param: str = ''):
-    return {'text': text, 'request': {'url': url, 'body': {'name': name_param, 'value': value_param}}}
+    return {'text': text, 'request': {'url': url, 'name': name_param, 'value': value_param}}
 
 
 def create_message(button: list, text_en: str = "", text_uk: str = "",):
