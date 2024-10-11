@@ -9,6 +9,7 @@ import ability.choices as choices
 from user.models import BazhayUser
 from brand.models import Brand
 from news.models import News
+from notifications.models import Notification
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -125,11 +126,17 @@ def send_notification_on_user_select(sender, instance, **kwargs):
                     'message': notification_data_to_autor
                 }
             )
+            Notification.objects.create(
+                message_uk=message_uk,
+                message_en=message_en,
+                users=instance.wish.author,
+                button=button
+            )
 
             # For the one who reserved
             message_uk = f"Ти зарезервував бажання {instance.wish.author.username} @{instance.wish.name} і зовсім скоро ощасливиш його подарунком!"
             message_en = f""
-            button = {'button_1': ''}
+            button = {'button_1': create_button()}
 
             notification_data_to_reserved = create_message(button, message_uk, message_en)
 
@@ -139,6 +146,13 @@ def send_notification_on_user_select(sender, instance, **kwargs):
                     'type': 'send_notification',
                     'message': notification_data_to_reserved
                 }
+            )
+
+            Notification.objects.create(
+                message_uk=message_uk,
+                message_en=message_en,
+                users=instance.selected_user,
+                button=button
             )
 
 
@@ -161,11 +175,17 @@ def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
                     'message': notification_data_to_author
                 }
             )
+            Notification.objects.create(
+                message_uk=message_uk,
+                message_en=message_en,
+                users=instance.reservation.wish.author,
+                button=button
+            )
 
 
-def create_button(text, url, param: str = ''):
+def create_button(text: str = '', url: str = '', param: str = ''):
     return {'text': text, 'request': {'url': url, 'param': param}}
 
 
 def create_message(button: dict, text_en: str = "", text_uk: str = "",):
-    return {'message_en': text_en, 'message_uk': text_uk,'button': button}
+    return {'message_en': text_en, 'message_uk': text_uk, 'button': button}

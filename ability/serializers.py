@@ -85,7 +85,6 @@ class WishSerializer(serializers.ModelSerializer):
         Check if the current user has reserved the wish.
 
         :args obj (Wish): The wish instance.
-
         :returns bool: True if the current user has reserved the wish, otherwise False.
         """
         reservation = Reservation.objects.filter(wish=obj).first()
