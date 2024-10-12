@@ -136,28 +136,26 @@ def send_notification_on_user_select(sender, instance, **kwargs):
             notification.save()
             notification.users.set([instance.wish.author])
 
-            # For the one who reserved
-            message_uk = f"Ти зарезервував бажання {instance.wish.author.username} @{instance.wish.name} і зовсім скоро ощасливиш його подарунком!"
-            message_en = f"You have reserved the wish of {instance.wish.author.username} @{instance.wish.name} and will soon make him happy with a gift!"
-            button = []
+        # For the one who reserved
+        message_uk = f"Ти зарезервував бажання {instance.wish.author.username} @{instance.wish.name} і зовсім скоро ощасливиш його подарунком!"
+        message_en = f"You have reserved the wish of {instance.wish.author.username} @{instance.wish.name} and will soon make him happy with a gift!"
+        button = []
 
-            notification_data_to_reserved = create_message(button, message_uk, message_en)
-
-            async_to_sync(channel_layer.group_send)(
-                f"user_{instance.selected_user.id}",
-                {
-                    'type': 'send_notification',
-                    'message': notification_data_to_reserved
-                }
-            )
-
-            notification = Notification.objects.create(
-                message_uk=message_uk,
-                message_en=message_en,
-                button=button
-            )
-            notification.save()
-            notification.users.set([instance.selected_user])
+        notification_data_to_reserved = create_message(button, message_uk, message_en)
+        async_to_sync(channel_layer.group_send)(
+            f"user_{instance.selected_user.id}",
+            {
+                'type': 'send_notification',
+                'message': notification_data_to_reserved
+            }
+        )
+        notification_to_selected_user = Notification.objects.create(
+            message_uk=message_uk,
+            message_en=message_en,
+            button=button
+        )
+        notification_to_selected_user.save()
+        notification_to_selected_user.users.set([instance.selected_user])
 
 
 @receiver(post_save, sender=CandidatesForReservation)
@@ -177,7 +175,12 @@ def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
                                     'Чудово! Зовсім скоро ти станеш щасливіше від отриманого бажання.',
                                     'It\'s a pity.But you can change your mind in the settings of this wish.',
                                     'Шкода. Проте змінити свою думку ти можеш у налаштуваннях цього бажання.'),
-                      create_button('No', 'Ні'),]
+                      create_button('No',
+                                    'Ні',
+                                    not_ok_text_en='It\'s a pity.But you can change your mind in the settings of this wish.',
+                                    not_ok_text_uk='Шкода. Проте змінити свою думку ти можеш у налаштуваннях цього бажання.',
+                                    ok_text_en='It\'s a pity.But you can change your mind in the settings of this wish.',
+                                    ok_text_uk='Шкода. Проте змінити свою думку ти можеш у налаштуваннях цього бажання.'),]
 
             notification_data_to_author = create_message(button, message_uk, message_en)
 
