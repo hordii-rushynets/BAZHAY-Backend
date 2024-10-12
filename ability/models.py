@@ -166,8 +166,9 @@ def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
 
             message_uk = f"Твоє бажання {instance.reservation.wish.name} хоче зарезервувати @{instance.bazhay_user.username}. Ти хочеш, щоб цей користувач виконав його?"
             message_en = f""
-            button = [create_button('Так', f'/api/wish/reservation/{instance.id}/select_user/', 'candidate_id', instance.bazhay_user.id),
-                      create_button('Ні')]
+            button = [create_button('Так', f'/api/wish/reservation/{instance.id}/select_user/', 'candidate_id', instance.bazhay_user.id,
+                                    'Чудово! Зовсім скоро ти станеш щасливіше від отриманого бажання.', 'Шкода. Проте змінити свою думку ти можеш у налаштуваннях цього бажання.'),
+                      create_button('Ні'),]
 
             notification_data_to_author = create_message(button, message_uk, message_en)
 
@@ -188,8 +189,9 @@ def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
             notification.users.set([instance.reservation.wish.author])
 
 
-def create_button(text: str = '', url: str = '', name_param: str = '', value_param: str = ''):
-    return {'text': text, 'request': {'url': url, 'name': name_param, 'value': value_param}}
+def create_button(text: str = '', url: str = '', name_param: str = '', value_param: str = '', ok_text: str = '', not_ok_text: str = ''):
+    return {'text': text, 'request': {'url': url, 'body': {
+        name_param: value_param,}}, 'response_ok_text': ok_text, 'response_not_ok_text': not_ok_text}
 
 
 def create_message(button: list, text_en: str = "", text_uk: str = "",):

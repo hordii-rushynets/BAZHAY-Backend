@@ -60,16 +60,24 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         message = data.get('message')
 
+        notification = await database_sync_to_async(Notification.objects.create)(
+            message_en=message.get('message_en'),
+            message_uk=message.get('message_uk'),
+            is_button=message.get('is_button'),
+        )
+
+        await database_sync_to_async(notification.users.add)(self.user)
+
         await self.channel_layer.group_send(
-            self.notifications_group,
+            self.personal_group,
             {
                 'type': 'send_notification',
                 'message': message
-            }
-        )
+            })
 
     async def send_notification(self, event):
         message = event['message']
         await self.send(text_data=json.dumps({
             'message': message
         }))
+

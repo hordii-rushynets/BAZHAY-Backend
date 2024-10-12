@@ -8,7 +8,7 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ['message_en', 'send_at', 'created_at']
     ordering = ['send_at']
     filter_horizontal = ('users',)
-    exclude = ['message', 'button']
+    exclude = ['message', 'button', 'is_button']
 
 
 
