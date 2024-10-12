@@ -19,7 +19,8 @@ def send_notification_task(notification_id):
             channel_layer = get_channel_layer()
             notification_data = {
                 'message_uk': notification.message_uk,
-                'message_en': notification.message_en
+                'message_en': notification.message_en,
+                'is_button': notification.is_button
             }
 
             if notification.users.exists():
