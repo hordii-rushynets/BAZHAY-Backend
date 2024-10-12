@@ -117,7 +117,6 @@ def send_notification_on_user_select(sender, instance, **kwargs):
             message_en = f"Your wish {instance.wish.name} has been reserved and will be fulfilled soon!"
             button = [create_button('See who wants to grant my wish',
                                     'Подивитись, хто хоче виповнити моє бажання',
-                                    f'/api/wish/reservation/wish={instance.wish.id}',
                                     f'/api/wish/reservation/wish={instance.wish.id}')]
 
             notification_data_to_autor = create_message(button, message_uk, message_en)
