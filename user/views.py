@@ -23,8 +23,7 @@ from .serializers import (CreateUserSerializer,
                           GoogleAuthSerializer,
                           ReturnBazhayUserSerializer,
                           AddressSerializer,
-                          PostAddressSerializer,
-                          BazhayUserDeletePhotoSerializer)
+                          PostAddressSerializer)
 from .utils import save_and_send_confirmation_code
 from .filters import BazhayUserFilter
 
@@ -440,25 +439,4 @@ class PostAddressViewSet(BaseAddressViewSet):
         :returns: A newly created PostAddress instance.
         """
         return PostAddress.objects.create(user=self.request.user)
-
-
-class BazhayUserDeletePhotoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
-    queryset = BazhayUser.objects.all()
-    serializer_class = BazhayUserDeletePhotoSerializer
-    permission_classes = [IsAuthenticated, IsRegisteredUser]
-
-    def get_object(self):
-        return self.request.user
-
-    def update(self, request, *args, **kwargs):
-        user = self.get_object()
-        serializer = self.get_serializer(user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def perform_update(self, serializer):
-        serializer.update()
-
 
