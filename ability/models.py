@@ -170,7 +170,7 @@ def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
             message_en = f"Your wish {instance.reservation.wish.name} wants to reserve @{instance.bazhay_user.username}. Do you want this user to fulfill it?"
             button = [create_button('Yes',
                                     'Так',
-                                    f'/api/wish/reservation/{instance.id}/select_user/',
+                                    f'/api/wish/reservation/{instance.reservation.id}/select_user/',
                                     'candidate_id',
                                     f'{instance.bazhay_user.id}',
                                     'Great! Very soon you will be happier with the wish you received.',
