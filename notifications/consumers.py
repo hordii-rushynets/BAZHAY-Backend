@@ -64,6 +64,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             message_en=message.get('message_en'),
             message_uk=message.get('message_uk'),
             is_button=message.get('is_button'),
+            button=message.get('button')
         )
 
         await database_sync_to_async(notification.users.add)(self.user)
