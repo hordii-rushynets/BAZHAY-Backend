@@ -312,6 +312,7 @@ class QuerySerializer(serializers.Serializer):
     count = serializers.IntegerField(read_only=True)
 
 
+
 class AccessToViewWishUserSerializer(serializers.ModelSerializer):
     user = ReturnBazhayUserSerializer(read_only=True)
 
@@ -378,4 +379,6 @@ class AccessToViewWishSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+
 

@@ -92,31 +92,19 @@ class ConfirmCodeSerializer(serializers.Serializer):
 
 
 class AddressSerializer(serializers.ModelSerializer):
-
+    """Serializer for the Address model."""
     class Meta:
         model = Address
         fields = ['id', 'country', 'region', 'city', 'street', 'post_index', 'full_name', 'phone_number']
         read_only_fields = ['id']
 
-    def validate(self, attrs):
-        request = self.context.get('request')
-        if Address.objects.filter(user=request.user).exists():
-            raise ValidationError(detail="Address for this user already exists.")
-        return attrs
-
 
 class PostAddressSerializer(serializers.ModelSerializer):
-
+    """Serializer for the PostAddress model."""
     class Meta:
         model = PostAddress
         fields = ['id', 'country', 'post_service', 'city', 'nearest_branch', 'full_name', 'phone_number']
         read_only_fields = ['id']
-
-    def validate(self, attrs):
-        request = self.context.get('request')
-        if PostAddress.objects.filter(user=request.user).exists():
-            raise ValidationError(detail="Address for this user already exists.")
-        return attrs
 
 
 class UpdateUserSerializers(serializers.ModelSerializer):
@@ -352,11 +340,22 @@ class UpdateUserPhotoSerializer(serializers.ModelSerializer):
     Fields:
         - photo (ImageField): The new profile photo to be uploaded.
     """
-    photo = serializers.ImageField()
 
     class Meta:
         model = BazhayUser
         fields = ['photo']
+
+    def update(self, instance, validated_data):
+        if 'photo' in validated_data:
+            old_photo = instance.photo
+
+            if old_photo:
+                old_photo.delete(save=False)
+
+            if validated_data.get('photo') is None:
+                instance.photo = None
+
+        return super().update(instance, validated_data)
 
 
 class GoogleAuthSerializer(serializers.ModelSerializer):
@@ -438,10 +437,6 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
     Serializer for the BazhayUser model to return user information including
     whether the requesting user is subscribed to the given user.
 
-    Methods:
-        get_is_subscribed(obj: BazhayUser) -> bool:
-            Returns a boolean indicating whether the current user
-            (from the request context) is subscribed to the provided BazhayUser object.
     """
     is_subscribed = serializers.SerializerMethodField()
     subscriber = serializers.SerializerMethodField()
@@ -471,3 +466,4 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
 
         """
         return obj.subscribers.count()
+
