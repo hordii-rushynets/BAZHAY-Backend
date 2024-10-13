@@ -3,6 +3,7 @@ from typing import Optional
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
+from django.db.models import Q
 
 import ability.choices as choices
 
@@ -106,13 +107,15 @@ class CandidatesForReservation(models.Model):
         return f"reservation {self.reservation.wish.name} candidates {self.bazhay_user}"
 
 
+from django.db.models import Q
+
 @receiver(post_save, sender=Reservation)
 def send_notification_on_user_select(sender, instance, **kwargs):
     if instance.selected_user:
         channel_layer = get_channel_layer()
 
         if not instance.wish.author.is_premium():
-            # For the author of the wish
+            # Повідомлення для автора бажання
             message_uk = f"Твоє бажання {instance.wish.name} зарезервували і незабаром воно виповниться!"
             message_en = f"Your wish {instance.wish.name} has been reserved and will be fulfilled soon!"
             button = [create_button('See who wants to grant my wish',
@@ -123,13 +126,13 @@ def send_notification_on_user_select(sender, instance, **kwargs):
                                     not_ok_text_en='Unfortunately, I didn\'t get to see it.(',
                                     not_ok_text_uk='На жаль, не вийшло подивитись('),]
 
-            notification_data_to_autor = create_message(button, message_uk, message_en)
+            notification_data_to_author = create_message(button, message_uk, message_en)
 
             async_to_sync(channel_layer.group_send)(
                 f"user_{instance.wish.author.id}",
                 {
                     'type': 'send_notification',
-                    'message': notification_data_to_autor
+                    'message': notification_data_to_author
                 }
             )
             notification = Notification.objects.create(
@@ -140,9 +143,9 @@ def send_notification_on_user_select(sender, instance, **kwargs):
             notification.save()
             notification.users.set([instance.wish.author])
 
-        # For the one who reserved
+        # Повідомлення для вибраного користувача
         message_uk = f"Ти зарезервував бажання {instance.wish.name} @{instance.wish.author.username} і зовсім скоро ощасливиш його подарунком!"
-        message_en = f"You have reserved the wish of {instance.wish.name} @{instance.wish.author.username} and will soon make him happy with a gift!"
+        message_en = f"You have reserved the wish {instance.wish.name} @{instance.wish.author.username} and will soon make them happy with a gift!"
         button = []
 
         notification_data_to_reserved = create_message(button, message_uk, message_en)
@@ -160,6 +163,31 @@ def send_notification_on_user_select(sender, instance, **kwargs):
         )
         notification_to_selected_user.save()
         notification_to_selected_user.users.set([instance.selected_user])
+
+        other_candidates = CandidatesForReservation.objects.filter(reservation=instance).exclude(
+            bazhay_user=instance.selected_user)
+
+        message_uk = f"На жаль, @{instance.wish.author.username} відхилив можливість виконати бажання {instance.wish.name}. Ти можеш обрати інше бажання та ощасливити його отримувача!"
+        message_en = f"Unfortunately, @{instance.wish.author.username} declined the opportunity to wish {instance.wish.name}'s wish. You can choose another wish and make its recipient happy!"
+        button = []
+
+        for candidate in other_candidates:
+            notification_data_to_candidate = create_message(button, message_uk, message_en)
+            async_to_sync(channel_layer.group_send)(
+                f"user_{candidate.bazhay_user.id}",
+                {
+                    'type': 'send_notification',
+                    'message': notification_data_to_candidate
+                }
+            )
+            notification_to_other_user = Notification.objects.create(
+                message_uk=message_uk,
+                message_en=message_en,
+                button=button
+            )
+            notification_to_other_user.save()
+            notification_to_other_user.users.set([candidate.bazhay_user])
+
 
 
 @receiver(post_save, sender=CandidatesForReservation)
