@@ -389,10 +389,19 @@ class ReservationViewSet(viewsets.ModelViewSet):
     filterset_class = ReservationFilter
 
     def get_queryset(self):
-        if not IsPremium().has_permission(self.request, self):
+        return self.queryset.filter(wish__author=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        if not request.user.is_premium():
             raise permissions.PermissionDenied('Access restricted to premium users only.')
 
-        return self.queryset.filter(wish__author=self.request.user)
+        return super().retrieve(request, *args, **kwargs)
+
+    def list(self, request, *args, **kwargs):
+        if not request.user.is_premium():
+            raise permissions.PermissionDenied('Access restricted to premium users only.')
+
+        return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated, IsRegisteredUser, IsPremium])
     def select_user(self, request, pk=None):
