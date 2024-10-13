@@ -286,23 +286,14 @@ class ReservationSerializer(serializers.ModelSerializer):
 
         reservation, created = Reservation.objects.get_or_create(wish=wish)
 
-        if created:
-            if wish.author.is_premium():
-                CandidatesForReservation.objects.create(
-                    reservation=reservation,
-                    bazhay_user=user
-                )
-            else:
-                reservation.selected_user = user
-
+        if wish.author.is_premium():
+            CandidatesForReservation.objects.create(
+                reservation=reservation,
+                bazhay_user=user
+            )
         else:
-            if wish.author.is_premium():
-                CandidatesForReservation.objects.create(
-                    reservation=reservation,
-                    bazhay_user=user
-                )
+            if created:
+                reservation.selected_user = user
 
         reservation.save()
         return reservation
-
-
