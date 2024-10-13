@@ -137,8 +137,8 @@ def send_notification_on_user_select(sender, instance, **kwargs):
             notification.users.set([instance.wish.author])
 
         # For the one who reserved
-        message_uk = f"Ти зарезервував бажання {instance.wish.author.username} @{instance.wish.name} і зовсім скоро ощасливиш його подарунком!"
-        message_en = f"You have reserved the wish of {instance.wish.author.username} @{instance.wish.name} and will soon make him happy with a gift!"
+        message_uk = f"Ти зарезервував бажання {instance.wish.name} @{instance.wish.author.username} і зовсім скоро ощасливиш його подарунком!"
+        message_en = f"You have reserved the wish of {instance.wish.name} @{instance.wish.author.username} and will soon make him happy with a gift!"
         button = []
 
         notification_data_to_reserved = create_message(button, message_uk, message_en)
