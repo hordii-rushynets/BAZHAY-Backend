@@ -340,11 +340,22 @@ class UpdateUserPhotoSerializer(serializers.ModelSerializer):
     Fields:
         - photo (ImageField): The new profile photo to be uploaded.
     """
-    photo = serializers.ImageField()
 
     class Meta:
         model = BazhayUser
         fields = ['photo']
+
+    def update(self, instance, validated_data):
+        if 'photo' in validated_data:
+            old_photo = instance.photo
+
+            if old_photo:
+                old_photo.delete(save=False)
+
+            if validated_data.get('photo') is None:
+                instance.photo = None
+
+        return super().update(instance, validated_data)
 
 
 class GoogleAuthSerializer(serializers.ModelSerializer):
@@ -456,6 +467,7 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
 
         """
         return obj.subscribers.count()
+
 
     def get_is_premium(self, obj: BazhayUser) -> bool:
         return obj.is_premium()

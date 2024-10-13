@@ -246,7 +246,7 @@ class QuerySerializer(serializers.Serializer):
     query = serializers.CharField(max_length=255, required=False)
     count = serializers.IntegerField(read_only=True)
 
-
+    
 class CandidatesForReservationSerializer(serializers.ModelSerializer):
     bazhay_user = ReturnBazhayUserSerializer(read_only=True)
 
@@ -304,5 +304,3 @@ class ReservationSerializer(serializers.ModelSerializer):
 
         reservation.save()
         return reservation
-
-
