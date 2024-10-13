@@ -20,7 +20,8 @@ def send_notification_task(notification_id):
             notification_data = {
                 'message_uk': notification.message_uk,
                 'message_en': notification.message_en,
-                'is_button': notification.is_button
+                'is_button': notification.is_button,
+                'button': notification.button
             }
 
             if notification.users.exists():
