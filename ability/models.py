@@ -109,9 +109,9 @@ class CandidatesForReservation(models.Model):
 @receiver(post_save, sender=Reservation)
 def send_notification_on_user_select(sender, instance, **kwargs):
     if instance.selected_user:
-        if not instance.wish.author.is_premium():
-            channel_layer = get_channel_layer()
+        channel_layer = get_channel_layer()
 
+        if not instance.wish.author.is_premium():
             # For the author of the wish
             message_uk = f"Твоє бажання {instance.wish.name} зарезервували і незабаром воно виповниться!"
             message_en = f"Your wish {instance.wish.name} has been reserved and will be fulfilled soon!"
