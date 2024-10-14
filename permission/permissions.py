@@ -37,5 +37,8 @@ class IsOwner(BasePermission):
 
 
 class IsPremium(BasePermission):
+    """
+    Access only for premium users.
+    """
     def has_object_permission(self, request, view, obj):
         return request.user.is_premium()

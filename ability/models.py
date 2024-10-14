@@ -104,10 +104,18 @@ class CandidatesForReservation(models.Model):
     bazhay_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='candidates')
 
     def __str__(self):
-        return f"reservation {self.reservation.wish.name} candidates {self.bazhay_user}"
+         return f"reservation {self.reservation.wish.name} candidates {self.bazhay_user}"
 
 
-from django.db.models import Q
+class AccessToViewWish(models.Model):
+    wish = models.OneToOneField(Wish, on_delete=models.CASCADE, related_name='access_to_view_wish',
+                                null=True, blank=True)
+
+
+class AccessToViewWishUser(models.Model):
+    user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='access_to_view_wish_users')
+    access_to_view_wish = models.ForeignKey(AccessToViewWish, on_delete=models.CASCADE, related_name='access_users')
+
 
 @receiver(post_save, sender=Reservation)
 def send_notification_on_user_select(sender, instance, **kwargs):

@@ -3,9 +3,9 @@ from django.core.files.base import ContentFile
 
 from rest_framework import serializers
 
-from .models import Wish, Reservation, CandidatesForReservation
+from .models import Wish, Reservation, CandidatesForReservation, AccessToViewWish, AccessToViewWishUser
 
-from user.serializers import ReturnBazhayUserSerializer
+from user.serializers import ReturnBazhayUserSerializer, BazhayUser
 from brand.serializers import BrandSerializer
 from moviepy.editor import VideoFileClip
 from news.serializers import NewsSerializers
@@ -246,6 +246,74 @@ class QuerySerializer(serializers.Serializer):
     query = serializers.CharField(max_length=255, required=False)
     count = serializers.IntegerField(read_only=True)
 
+
+class AccessToViewWishUserSerializer(serializers.ModelSerializer):
+    user = ReturnBazhayUserSerializer(read_only=True)
+
+    class Meta:
+        model = AccessToViewWishUser
+        fields = ['user']
+
+
+class AccessToViewWishSerializer(serializers.ModelSerializer):
+    users = AccessToViewWishUserSerializer(many=True, read_only=True, source='access_users')
+    user_ids = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True
+    )
+    wish_id = serializers.IntegerField(write_only=True, required=False)
+
+    class Meta:
+        model = AccessToViewWish
+        fields = ['id', 'wish', 'users', 'user_ids', 'wish_id']
+        read_only_fields = ['wish']
+
+    def validate(self, attrs):
+        """Custom validation for the user_ids and wish_id."""
+        if self.instance is None:
+            wish_id = attrs.get('wish_id')
+            if wish_id is not None:
+                try:
+                    Wish.objects.get(id=wish_id)  # Check if Wish exists
+                except Wish.DoesNotExist:
+                    raise serializers.ValidationError(detail=f"The wish with id {wish_id} does not exist.")
+
+        user_ids = attrs.get('user_ids', [])
+        users = BazhayUser.objects.filter(id__in=user_ids)
+        if users.count() != len(user_ids):
+            raise serializers.ValidationError(detail="Some of the users do not exist.")
+
+        return attrs
+
+    def create(self, validated_data: dict) -> AccessToViewWish:
+        users_ids = validated_data.pop('user_ids')
+        wish_id = validated_data.pop('wish_id')
+
+        wish = Wish.objects.get(id=wish_id)
+
+        access_to_view_wish = AccessToViewWish.objects.create(wish=wish)
+
+        for user_id in users_ids:
+            user = BazhayUser.objects.get(id=user_id)
+            AccessToViewWishUser.objects.create(user=user, access_to_view_wish=access_to_view_wish)
+
+        AccessToViewWishUser.objects.create(user=self.context['request'].user, access_to_view_wish=access_to_view_wish)
+
+        return access_to_view_wish
+
+    def update(self, instance, validated_data):
+        user_ids = validated_data.pop('user_ids', [])
+
+        instance.access_users.all().delete()
+
+        for user_id in user_ids:
+            user = BazhayUser.objects.get(id=user_id)
+            AccessToViewWishUser.objects.create(user=user, access_to_view_wish=instance)
+
+        AccessToViewWishUser.objects.create(user=self.context['request'].user, access_to_view_wish=instance)
+
+        instance.save()
+        return instance
+
     
 class CandidatesForReservationSerializer(serializers.ModelSerializer):
     bazhay_user = ReturnBazhayUserSerializer(read_only=True)
@@ -297,3 +365,4 @@ class ReservationSerializer(serializers.ModelSerializer):
 
         reservation.save()
         return reservation
+
