@@ -7,14 +7,13 @@ from .models import Premium
 
 
 class PremiumSerializers(serializers.ModelSerializer):
-    bazhay_user = ReturnBazhayUserSerializer(read_only=True)
     is_active = serializers.SerializerMethodField()
     code = serializers.CharField(write_only=True)
 
     class Meta:
         model = Premium
-        fields = ['id', 'bazhay_user', 'date_of_payment', 'is_active', 'code']
-        read_only_fields = ['id', 'bazhay_user', 'date_of_payment', 'is_active']
+        fields = ['id', 'date_of_payment', 'is_active', 'is_an_annual_payment', 'expiration_date', 'code']
+        read_only_fields = ['id', 'date_of_payment', 'is_active', 'expiration_date']
 
     def get_is_active(self, obj):
         return obj.is_active
@@ -32,16 +31,21 @@ class PremiumSerializers(serializers.ModelSerializer):
 
     def create(self, validated_data):
         bazhay_user = self.context['request'].user
+        is_an_annual_payment = validated_data.get('is_an_annual_payment', False)
 
         instance, created = Premium.objects.get_or_create(
             bazhay_user=bazhay_user,
             defaults={
                 'date_of_payment': timezone.now(),
+                'is_an_annual_payment': is_an_annual_payment,
                 'is_used_trial': True,
             }
         )
-        if not created and not instance.is_active:
+
+        if not created:
             instance.date_of_payment = timezone.now()
+            instance.is_an_annual_payment = is_an_annual_payment
+            instance.save()
 
         return instance
 
