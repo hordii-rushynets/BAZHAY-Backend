@@ -1,6 +1,6 @@
 import django_filters
 from django.db.models import F, Case, When, ExpressionWrapper, FloatField
-from .models import Wish, Reservation
+from .models import Wish, AccessToViewWish, Reservation
 from .services import CurrencyService
 
 
@@ -64,6 +64,14 @@ class WishFilter(django_filters.FilterSet):
         fields = ['is_fully_created', 'price', 'created', 'access', 'brand', 'user']
 
 
+class AccessToWishFilter(django_filters.FilterSet):
+    wish = django_filters.NumberFilter(field_name='wish__id')
+
+    class Meta:
+        model = AccessToViewWish
+        fields = ['wish']
+
+        
 class ReservationFilter(django_filters.FilterSet):
     wish = django_filters.NumberFilter(field_name='wish__id')
 

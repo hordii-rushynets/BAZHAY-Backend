@@ -12,32 +12,41 @@ from django.db.models.query import QuerySet
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Wish, Reservation, CandidatesForReservation
+from .models import Wish, Reservation, CandidatesForReservation, AccessToViewWish
+
 from .serializers import (WishSerializer,
                           ReservationSerializer,
                           VideoSerializer,
                           CombinedSearchSerializer,
-                          QuerySerializer)
+                          QuerySerializer,
+                          AccessToViewWishUser,
+                          AccessToViewWishSerializer)
 
-from .filters import WishFilter, ReservationFilter
+
+from .filters import WishFilter, ReservationFilter, AccessToWishFilter
 from .services import PopularRequestService
+from .choices import access_type_choices
 
 from subscription.models import Subscription
 from user.models import BazhayUser
 from brand.models import Brand
-from permission.permissions import IsRegisteredUser, IsPremium, IsRegisteredUserOrReadOnly
+from permission.permissions import IsRegisteredUserOrReadOnly, IsRegisteredUser, IsPremium
 
 SECONDS_IN_A_DAY = 86400
 
 
-def can_view_ability(user, ability):
+def can_view_ability(user, wish):
     """Checks access to the wish"""
-    if ability.access_type == 'everyone':
+    if wish.access_type == access_type_choices[0][0]:
         return True
-    elif ability.access_type == 'only_me' and ability.author == user:
+    elif wish.access_type == access_type_choices[2][0] and wish.author == user:
         return True
-    elif ability.access_type == 'subscribers':
-        return Subscription.objects.filter(user=user, subscribed_to=ability.author).exists() or ability.author == user
+    elif wish.access_type == access_type_choices[1][0]:
+        return Subscription.objects.filter(user=user, subscribed_to=wish.author).exists() or wish.author == user
+    elif wish.access_type == access_type_choices[3][0]:
+        access_to_view_wish = getattr(wish, 'access_to_view_wish', None)
+        if access_to_view_wish:
+            return AccessToViewWishUser.objects.filter(user=user, access_to_view_wish=access_to_view_wish).exists() or wish.author == user
     return False
 
 
@@ -138,32 +147,24 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_class = WishFilter
     pagination_class = PageNumberPagination
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         """
         Returns the filtered and paginated QuerySet of wishes.
-
-        Filters the wishes based on access type:
-        - `everyone`: Public wishes
-        - `only_me`: Wishes authored by the user
-        - `subscribers`: Wishes from authors to whom the user is subscribed
-
-        Excludes wishes authored by the requesting user to avoid showing their own wishes.
-
-        Returns:
-            QuerySet: A filtered and paginated QuerySet of `Wish` objects.
+        :returns (QuerySet): A filtered and paginated QuerySet of `Wish` objects.
         """
         user = self.request.user
 
-        queryset = Wish.objects.filter(
+        queryset = self.queryset.filter(
             Q(access_type='everyone') |
             Q(access_type='only_me', author=user) |
             Q(access_type='subscribers',
-              author__in=Subscription.objects.filter(user=user).values_list('subscribed_to', flat=True))
-        )
+              author__in=Subscription.objects.filter(user=user).values_list('subscribed_to', flat=True)) |
+            Q(access_to_view_wish__access_users__user=user)
+        ).distinct()
         return queryset
 
     def list(self, request, *args, **kwargs):
-        self.queryset.exclude(author=self.request.user).order_by('-views_number')
+        self.queryset = self.get_queryset().exclude(author=self.request.user).order_by('-views_number')
         return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
@@ -380,6 +381,20 @@ class QueryView(viewsets.mixins.CreateModelMixin, viewsets.mixins.ListModelMixin
         return Response({'message': 'Query saved successfully'}, status=status.HTTP_201_CREATED)
 
 
+class AccessToViewWishViewSet(viewsets.ModelViewSet):
+    """
+    A viewset for managing access to wishes.
+    """
+    queryset = AccessToViewWish.objects.all()
+    serializer_class = AccessToViewWishSerializer
+    permission_classes = [permissions.IsAuthenticated, IsPremium]
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = AccessToWishFilter
+
+    def get_queryset(self):
+        return self.queryset.filter(wish__author=self.request.user)
+
+      
 class ReservationViewSet(viewsets.ModelViewSet):
     queryset = Reservation.objects.all()
     serializer_class = ReservationSerializer
@@ -416,4 +431,3 @@ class ReservationViewSet(viewsets.ModelViewSet):
         reservation.save()
 
         return Response({'detail': 'Candidate selected successfully.'}, status=status.HTTP_200_OK)
-
