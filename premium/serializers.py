@@ -58,7 +58,8 @@ class TrialSubscriptionSerializer(serializers.Serializer):
             bazhay_user=bazhay_user,
             defaults={
                 'date_of_payment': timezone.now(),
-                'is_used_trial': True,
+                'is_used_trial': False,
+                'is_trial_period': True,
             }
         )
 
