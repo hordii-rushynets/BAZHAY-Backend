@@ -32,6 +32,7 @@ class Premium(models.Model):
                 self.is_an_annual_payment = False
                 self.is_used_trial = True
                 self.is_trial_period = False
+            return period
         else:
             return timezone.now() <= (self.date_of_payment + timedelta(days=30))
 
