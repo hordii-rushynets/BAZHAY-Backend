@@ -439,4 +439,3 @@ class PostAddressViewSet(BaseAddressViewSet):
         :returns: A newly created PostAddress instance.
         """
         return PostAddress.objects.create(user=self.request.user)
-

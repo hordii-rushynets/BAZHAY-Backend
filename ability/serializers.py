@@ -3,7 +3,7 @@ from django.core.files.base import ContentFile
 
 from rest_framework import serializers
 
-from .models import Wish, Reservation, AccessToViewWish, AccessToViewWishUser
+from .models import Wish, Reservation, CandidatesForReservation, AccessToViewWish, AccessToViewWishUser
 
 from user.serializers import ReturnBazhayUserSerializer, BazhayUser
 from brand.serializers import BrandSerializer
@@ -27,13 +27,16 @@ class WishSerializer(serializers.ModelSerializer):
     is_reservation = serializers.SerializerMethodField()
     is_user_create = serializers.SerializerMethodField()
     is_your_wish = serializers.SerializerMethodField()
+    is_reserved_by_me = serializers.SerializerMethodField()
+    is_me_candidates_to_reservation = serializers.SerializerMethodField()
 
     class Meta:
         model = Wish
         fields = ['id', 'name', 'name_en', 'name_uk', 'photo', 'video', 'price', 'link', 'description',
                   'description_en', 'description_uk',
                   'additional_description', 'additional_description_en', 'additional_description_uk', 'access_type', 'currency', 'created_at', 'is_fully_created',
-                  'is_reservation', 'is_user_create', 'is_your_wish', 'image_size', 'author', 'brand_author',
+                  'is_reservation', 'is_user_create', 'is_your_wish', 'is_reserved_by_me', 'is_fulfilled',
+                  'is_me_candidates_to_reservation', 'image_size', 'author', 'brand_author',
                   'news_author']
         read_only_fields = ['id', 'author', 'created_at', 'brand_author', 'news_author']
 
@@ -70,13 +73,36 @@ class WishSerializer(serializers.ModelSerializer):
         """
         Determine if the wish is reserved.
 
-        Args:
-            obj (Wish): The wish instance.
-
-        Returns:
-            bool: True if the wish is reserved, otherwise False.
+        :args obj (Wish): The wish instance.
+        :returns (bool): True if the wish is reserved, otherwise False.
         """
-        return Reservation.objects.filter(wish=obj).exists()
+        reservation = Reservation.objects.filter(wish=obj).first()
+        if reservation and reservation.selected_user:
+            return True
+        return False
+
+    def get_is_reserved_by_me(self, obj):
+        """
+        Check if the current user has reserved the wish.
+
+        :args obj (Wish): The wish instance.
+        :returns bool: True if the current user has reserved the wish, otherwise False.
+        """
+        reservation = Reservation.objects.filter(wish=obj).first()
+        if reservation is None:
+            return False
+
+        return reservation.selected_user == self.context['request'].user
+
+    def get_is_me_candidates_to_reservation(self, obj):
+        reservation = Reservation.objects.filter(wish=obj).first()
+        if reservation is None:
+            return False
+
+        candidate = CandidatesForReservation.objects.filter(reservation=reservation,
+                                                            bazhay_user=self.context['request'].user).first()
+
+        return True if candidate is not None else False
 
     def get_is_user_create(self, obj: Wish) -> bool:
         """
@@ -101,80 +127,6 @@ class WishSerializer(serializers.ModelSerializer):
             bool: True if the wish belongs to the requesting user, otherwise False.
         """
         return obj.author == self.context['request'].user
-
-
-class ReservationSerializer(serializers.Serializer):
-    """
-    Serializer for creating and validating reservations for wishes.
-
-    This serializer handles the creation of reservations, including validation
-    to ensure that users cannot reserve their own wishes or reserve a wish that
-    is already reserved. It also checks that certain conditions are met before
-    allowing the reservation.
-
-    Attributes:
-        bazhay_user (ReturnBazhayUserSerializer): The user making the reservation.
-        wish (WishSerializer): The wish being reserved.
-        wish_id (PrimaryKeyRelatedField): The ID of the wish being reserved, used for creating reservations.
-
-    Meta:
-        model: The model associated with this serializer (Reservation).
-        fields: List of fields to be included in the serialized representation.
-        read_only_fields: Fields that are read-only.
-    """
-    bazhay_user = ReturnBazhayUserSerializer(read_only=True)
-    wish = WishSerializer(read_only=True)
-    wish_id = serializers.PrimaryKeyRelatedField(queryset=Wish.objects.all(), write_only=True, source='wish')
-
-    class Meta:
-        model = Reservation
-        fields = ['id', 'bazhay_user', 'wish', 'wish_id']
-        read_only_fields = ['id']
-
-    def validate(self, attrs: dict) -> dict:
-        """
-        Validate reservation data.
-
-        Ensures that the user is not reserving their own wish, that the wish is not
-        already reserved, and that the wish meets certain conditions before allowing
-        the reservation.
-
-        Args:
-            attrs (dict): The data to be validated.
-
-        Returns:
-            dict: The validated data.
-
-        Raises:
-            serializers.ValidationError: If any validation checks fail.
-        """
-        user = self.context['request'].user
-        wish = attrs.get('wish')
-
-        if wish.author == user:
-            raise serializers.ValidationError("You can't reserve your own wishes.")
-
-        if Reservation.objects.filter(wish=wish).exists():
-            raise serializers.ValidationError("This wish is already reserved.")
-
-        if not wish.author and (wish.news_author or wish.brand_author):
-            raise serializers.ValidationError("You can't reserve this wish.")
-
-        return attrs
-
-    def create(self, validated_data: dict) -> Reservation:
-        """
-        Create a new reservation.
-
-        Args:
-            validated_data (dict): The validated data used to create the reservation.
-
-        Returns:
-            Reservation: The newly created reservation instance.
-        """
-        user = self.context['request'].user
-        reservation = Reservation.objects.create(bazhay_user=user, **validated_data)
-        return reservation
 
 
 class VideoSerializer(serializers.ModelSerializer):
@@ -269,23 +221,6 @@ class WishSerializerForNotUser(serializers.ModelSerializer):
     This serializer is used to convert Wish model instances into JSON format and vice versa.
     It includes the fields that are relevant for views where the user is not authenticated or does not
     need to see or modify all the fields.
-
-    Attributes:
-        id (IntegerField): Unique identifier for the wish.
-        name (CharField): Name or title of the wish.
-        photo (ImageField): Photo associated with the wish.
-        video (URLField): Video URL related to the wish.
-        price (DecimalField): Price of the wish.
-        link (URLField): External link associated with the wish.
-        description (CharField): Description of the wish.
-        additional_description (CharField): Additional description for more details.
-        currency (CharField): Currency code for the price.
-        created_at (DateTimeField): Timestamp when the wish was created.
-        image_size (IntegerField): Size of the wish's image (if applicable).
-
-    Meta:
-        model: The model associated with this serializer.
-        fields: List of fields to be included in the serialized representation.
     """
     class Meta:
         model = Wish
@@ -310,7 +245,6 @@ class QuerySerializer(serializers.Serializer):
     """Serializer to query."""
     query = serializers.CharField(max_length=255, required=False)
     count = serializers.IntegerField(read_only=True)
-
 
 
 class AccessToViewWishUserSerializer(serializers.ModelSerializer):
@@ -380,5 +314,55 @@ class AccessToViewWishSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+    
+class CandidatesForReservationSerializer(serializers.ModelSerializer):
+    bazhay_user = ReturnBazhayUserSerializer(read_only=True)
 
+    class Meta:
+        model = CandidatesForReservation
+        fields = ['bazhay_user']
+
+
+class ReservationSerializer(serializers.ModelSerializer):
+    candidates = CandidatesForReservationSerializer(many=True, read_only=True)
+    selected_user = ReturnBazhayUserSerializer(read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = ['id', 'wish', 'selected_user', 'candidates']
+        read_only_fields = ['selected_user']
+
+    def validate(self, data):
+        wish = data.get('wish')
+        user = self.context['request'].user
+
+        if Reservation.objects.filter(wish=wish).exists():
+            reservation = Reservation.objects.get(wish=wish)
+            if not reservation.is_active:
+                raise serializers.ValidationError(detail="It's already reserved for someone.")
+            if CandidatesForReservation.objects.filter(reservation=reservation, bazhay_user=user).exists():
+                raise serializers.ValidationError(detail="The user is already a candidate for this reservation.")
+
+        if wish.author == user:
+            raise serializers.ValidationError(detail="You cannot reserve your own wish.")
+
+        return data
+
+    def create(self, validated_data):
+        wish = validated_data.get('wish')
+        user = self.context['request'].user
+
+        reservation, created = Reservation.objects.get_or_create(wish=wish)
+
+        if wish.author.is_premium():
+            CandidatesForReservation.objects.create(
+                reservation=reservation,
+                bazhay_user=user
+            )
+        else:
+            if created:
+                reservation.selected_user = user
+
+        reservation.save()
+        return reservation
 

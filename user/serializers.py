@@ -440,11 +440,12 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
     """
     is_subscribed = serializers.SerializerMethodField()
     subscriber = serializers.SerializerMethodField()
+    is_premium = serializers.SerializerMethodField()
 
     class Meta:
         model = BazhayUser
-        fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber']
-        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber']
+        fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber', 'is_premium']
+        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber', 'is_premium']
 
     def get_is_subscribed(self, obj: BazhayUser) -> bool:
         """
@@ -467,3 +468,6 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
         """
         return obj.subscribers.count()
 
+
+    def get_is_premium(self, obj: BazhayUser) -> bool:
+        return obj.is_premium()
