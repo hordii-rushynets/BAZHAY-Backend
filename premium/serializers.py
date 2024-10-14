@@ -12,7 +12,7 @@ class PremiumSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Premium
-        fields = ['id', 'date_of_payment', 'is_active', 'is_an_annual_payment', 'expiration_date', 'code']
+        fields = ['id', 'date_of_payment', 'is_active', 'is_an_annual_payment', 'expiration_date', 'code', 'is_trial_period']
         read_only_fields = ['id', 'date_of_payment', 'is_active', 'expiration_date']
 
     def get_is_active(self, obj):
