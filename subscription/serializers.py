@@ -22,10 +22,10 @@ class CreateOrDeleteSubscriptionSerializer(serializers.ModelSerializer):
         try:
             subscribed_to_user = BazhayUser.objects.get(id=subscribed_to_id)
         except BazhayUser.DoesNotExist:
-            raise serializers.ValidationError({"detail": "User not found."})
+            raise serializers.ValidationError(detail="User not found.")
 
         if subscribed_to_user == request_user:
-            raise serializers.ValidationError({"detail": "You cannot subscribe to yourself."})
+            raise serializers.ValidationError(detail="You cannot subscribe to yourself.")
 
         data['subscribed_to'] = subscribed_to_user
         return data

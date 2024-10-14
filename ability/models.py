@@ -3,12 +3,19 @@ from typing import Optional
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
+from django.db.models import Q
 
 import ability.choices as choices
 
 from user.models import BazhayUser
 from brand.models import Brand
 from news.models import News
+from notifications.models import Notification
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 def validate_video_file(file: Optional[UploadedFile]) -> None:
@@ -54,6 +61,7 @@ class Wish(models.Model):
     is_fully_created = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     views_number = models.PositiveIntegerField(blank=True, null=True, default=0)
+    is_fulfilled = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         """Return the name of the wish."""
@@ -66,8 +74,7 @@ class Wish(models.Model):
         If the wish has an author, the author's email is returned. If a brand author is present,
         the brand's name is returned. If neither is available, a dash ('-') is returned.
 
-        Returns:
-            str: The email of the author, the brand name, or a dash ('-').
+        :returns (str): The email of the author, the brand name, or a dash ('-').
         """
         if self.author:
             return self.author.email
@@ -79,8 +86,167 @@ class Wish(models.Model):
       
 
 class Reservation(models.Model):
-    bazhay_user = models.ForeignKey(BazhayUser, related_name='reservation', on_delete=models.CASCADE)
-    wish = models.ForeignKey(Wish, related_name='reservation', on_delete=models.CASCADE)
+    """
+    Reservation of a wish for a users.
+    """
+    wish = models.ForeignKey(Wish, on_delete=models.CASCADE, related_name='reservation')
+    selected_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='reservation', null=True, blank=True)
+
+    def is_active(self):
+        return False if self.selected_user else True
 
     def __str__(self):
-        return f"{self.bazhay_user} reservation {self.wish.name}"
+        return f"wish {self.wish.name} reservation to {self.selected_user}"
+
+
+class CandidatesForReservation(models.Model):
+    reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE, related_name='candidates')
+    bazhay_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='candidates')
+
+    def __str__(self):
+        return f"reservation {self.reservation.wish.name} candidates {self.bazhay_user}"
+
+
+from django.db.models import Q
+
+@receiver(post_save, sender=Reservation)
+def send_notification_on_user_select(sender, instance, **kwargs):
+    if instance.selected_user:
+        channel_layer = get_channel_layer()
+
+        if not instance.wish.author.is_premium():
+            # Повідомлення для автора бажання
+            message_uk = f"Твоє бажання {instance.wish.name} зарезервували і незабаром воно виповниться!"
+            message_en = f"Your wish {instance.wish.name} has been reserved and will be fulfilled soon!"
+            button = [create_button('See who wants to grant my wish',
+                                    'Подивитись, хто хоче виповнити моє бажання',
+                                    f'/api/wish/reservation/?wish={instance.wish.id}',
+                                    ok_text_en=f'Your wish wants to be fulfilled by @{instance.selected_user.username}',
+                                    ok_text_uk=f'Твоє бажання хоче виповнити @{instance.selected_user.username}',
+                                    not_ok_text_en='Unfortunately, I didn\'t get to see it.(',
+                                    not_ok_text_uk='На жаль, не вийшло подивитись('),]
+
+            notification_data_to_author = create_message(button, message_uk, message_en)
+
+            async_to_sync(channel_layer.group_send)(
+                f"user_{instance.wish.author.id}",
+                {
+                    'type': 'send_notification',
+                    'message': notification_data_to_author
+                }
+            )
+            notification = Notification.objects.create(
+                message_uk=message_uk,
+                message_en=message_en,
+                button=button
+            )
+            notification.save()
+            notification.users.set([instance.wish.author])
+
+        # Повідомлення для вибраного користувача
+        message_uk = f"Ти зарезервував бажання {instance.wish.name} @{instance.wish.author.username} і зовсім скоро ощасливиш його подарунком!"
+        message_en = f"You have reserved the wish {instance.wish.name} @{instance.wish.author.username} and will soon make them happy with a gift!"
+        button = []
+
+        notification_data_to_reserved = create_message(button, message_uk, message_en)
+        async_to_sync(channel_layer.group_send)(
+            f"user_{instance.selected_user.id}",
+            {
+                'type': 'send_notification',
+                'message': notification_data_to_reserved
+            }
+        )
+        notification_to_selected_user = Notification.objects.create(
+            message_uk=message_uk,
+            message_en=message_en,
+            button=button
+        )
+        notification_to_selected_user.save()
+        notification_to_selected_user.users.set([instance.selected_user])
+
+        other_candidates = CandidatesForReservation.objects.filter(reservation=instance).exclude(
+            bazhay_user=instance.selected_user)
+
+        message_uk = f"На жаль, @{instance.wish.author.username} відхилив можливість виконати бажання {instance.wish.name}. Ти можеш обрати інше бажання та ощасливити його отримувача!"
+        message_en = f"Unfortunately, @{instance.wish.author.username} declined the opportunity to wish {instance.wish.name}'s wish. You can choose another wish and make its recipient happy!"
+        button = []
+
+        for candidate in other_candidates:
+            notification_data_to_candidate = create_message(button, message_uk, message_en)
+            async_to_sync(channel_layer.group_send)(
+                f"user_{candidate.bazhay_user.id}",
+                {
+                    'type': 'send_notification',
+                    'message': notification_data_to_candidate
+                }
+            )
+            notification_to_other_user = Notification.objects.create(
+                message_uk=message_uk,
+                message_en=message_en,
+                button=button
+            )
+            notification_to_other_user.save()
+            notification_to_other_user.users.set([candidate.bazhay_user])
+
+
+
+@receiver(post_save, sender=CandidatesForReservation)
+def send_notification_on_if_new_candidate(sender, instance, created, **kwargs):
+    if created:
+        if instance.reservation.wish.author.is_premium():
+            channel_layer = get_channel_layer()
+
+            message_uk = f"Твоє бажання {instance.reservation.wish.name} хоче зарезервувати @{instance.bazhay_user.username}. Ти хочеш, щоб цей користувач виконав його?"
+            message_en = f"Your wish {instance.reservation.wish.name} wants to reserve @{instance.bazhay_user.username}. Do you want this user to fulfill it?"
+            button = [create_button('Yes',
+                                    'Так',
+                                    f'/api/wish/reservation/{instance.reservation.id}/select_user/',
+                                    'candidate_id',
+                                    f'{instance.bazhay_user.id}',
+                                    'Great! Very soon you will be happier with the wish you received.',
+                                    'Чудово! Зовсім скоро ти станеш щасливіше від отриманого бажання.',
+                                    'It\'s a pity.But you can change your mind in the settings of this wish.',
+                                    'Шкода. Проте змінити свою думку ти можеш у налаштуваннях цього бажання.'),
+                      create_button('No',
+                                    'Ні',
+                                    not_ok_text_en='It\'s a pity.But you can change your mind in the settings of this wish.',
+                                    not_ok_text_uk='Шкода. Проте змінити свою думку ти можеш у налаштуваннях цього бажання.',
+                                    ok_text_en='It\'s a pity.But you can change your mind in the settings of this wish.',
+                                    ok_text_uk='Шкода. Проте змінити свою думку ти можеш у налаштуваннях цього бажання.'),]
+
+            notification_data_to_author = create_message(button, message_uk, message_en)
+
+            async_to_sync(channel_layer.group_send)(
+                f"user_{instance.reservation.wish.author.id}",
+                {
+                    'type': 'send_notification',
+                    'message': notification_data_to_author
+                }
+            )
+
+            notification = Notification.objects.create(
+                message_uk=message_uk,
+                message_en=message_en,
+                button=button
+            )
+            notification.save()
+            notification.users.set([instance.reservation.wish.author])
+
+
+def create_button(text_en: str = '', text_uk: str = '', url: str = '', name_param: str = '', value_param: str = '', ok_text_en: str = '',
+                  ok_text_uk: str = '', not_ok_text_en: str = '', not_ok_text_uk: str = ''):
+    return {'text_en': text_en,
+            'text_uk': text_uk,
+            'request': {'url': url,
+                        'body': {name_param: value_param,}},
+            'response_ok_text': {'ok_text_en': ok_text_en,
+                                 'ok_text_uk': ok_text_uk},
+            'response_not_ok_text': {'not_ok_text_en': not_ok_text_en,
+                                     'not_ok_text_uk': not_ok_text_uk}
+            }
+
+
+def create_message(button: list, text_en: str = "", text_uk: str = "",):
+    return {'message_en': text_en,
+            'message_uk': text_uk,
+            'button': button}

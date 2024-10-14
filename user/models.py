@@ -68,6 +68,12 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
         """Returns the string representation of the user, which is the email address."""
         return str(self.email)
 
+    def is_premium(self):
+        try:
+            return self.premium.is_active
+        except:
+            return False
+
 
 class BaseAddress(models.Model):
     """ Abstract model representing a basic address with user, country, city, full name, and phone number fields.

@@ -12,21 +12,20 @@ from django.db.models.query import QuerySet
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Wish, Reservation
+from .models import Wish, Reservation, CandidatesForReservation
 from .serializers import (WishSerializer,
                           ReservationSerializer,
                           VideoSerializer,
                           CombinedSearchSerializer,
                           QuerySerializer)
 
-from .filters import WishFilter
+from .filters import WishFilter, ReservationFilter
 from .services import PopularRequestService
 
 from subscription.models import Subscription
 from user.models import BazhayUser
 from brand.models import Brand
-from permission.permissions import IsRegisteredUserOrReadOnly, IsRegisteredUser
-
+from permission.permissions import IsRegisteredUser, IsPremium, IsRegisteredUserOrReadOnly
 
 SECONDS_IN_A_DAY = 86400
 
@@ -164,7 +163,7 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
     def list(self, request, *args, **kwargs):
-        self.queryset.exclude(author=self.request.user)
+        self.queryset.exclude(author=self.request.user).order_by('-views_number')
         return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
@@ -186,36 +185,7 @@ class AllWishViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response(status=status.HTTP_200_OK)
 
-
-class ReservationViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet for managing reservations.
-
-    Provides CRUD operations for reservations where users can create, retrieve, update, and delete their reservations.
-    The `get_queryset` method filters reservations to only include those associated with the requesting user.
-
-    Attributes:
-        queryset (QuerySet): The queryset of `Reservation` objects.
-        serializer_class (Type[serializers.ModelSerializer]): The serializer used for handling reservation data.
-        permission_classes (List[Type[permissions.BasePermission]]): List of permission classes to enforce user authentication.
-    """
-    queryset = Reservation.objects.all()
-    serializer_class = ReservationSerializer
-    permission_classes = [IsRegisteredUser]
-
-    def get_queryset(self) -> QuerySet:
-        """
-        Returns the QuerySet of reservations for the requesting user.
-
-        Filters the reservations to include only those that belong to the currently authenticated user.
-
-        Returns:
-            QuerySet: A QuerySet of `Reservation` objects associated with the requesting user.
-        """
-        bazhay_user = self.request.user
-        return super().get_queryset().filter(bazhay_user=bazhay_user)
-
-
+      
 class VideoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
     """
         ViewSet for updating video associated with a wish.
@@ -408,3 +378,42 @@ class QueryView(viewsets.mixins.CreateModelMixin, viewsets.mixins.ListModelMixin
 
         self.service.set(query)
         return Response({'message': 'Query saved successfully'}, status=status.HTTP_201_CREATED)
+
+
+class ReservationViewSet(viewsets.ModelViewSet):
+    queryset = Reservation.objects.all()
+    serializer_class = ReservationSerializer
+    permission_classes = [permissions.IsAuthenticated, IsRegisteredUser]
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = ReservationFilter
+
+    def get_queryset(self):
+        return self.queryset.filter(wish__author=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        if not request.user.is_premium():
+            raise PermissionDenied('Access restricted to premium users only.')
+
+        return super().retrieve(request, *args, **kwargs)
+
+    def list(self, request, *args, **kwargs):
+        if not request.user.is_premium():
+            raise PermissionDenied('Access restricted to premium users only.')
+
+        return super().list(request, *args, **kwargs)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated, IsRegisteredUser, IsPremium])
+    def select_user(self, request, pk=None):
+        reservation = self.get_object()
+
+        candidate_id = request.data.get('candidate_id')
+        try:
+            candidate = CandidatesForReservation.objects.get(bazhay_user=candidate_id, reservation=reservation)
+        except CandidatesForReservation.DoesNotExist:
+            return Response({'detail': 'Candidate not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        reservation.selected_user = candidate.bazhay_user
+        reservation.save()
+
+        return Response({'detail': 'Candidate selected successfully.'}, status=status.HTTP_200_OK)
+
