@@ -1,7 +1,7 @@
 from django.core.cache import cache
 from rest_framework import serializers
 
-from .models import BazhayUser, Address, PostAddress, AccessToAddress
+from .models import BazhayUser, Address, PostAddress, AccessToAddress, AccessToPostAddress
 
 from subscription.models import Subscription
 
@@ -466,10 +466,12 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
         return obj.is_premium()
 
 
-class AccessToAddressSerializer(serializers.ModelSerializer):
+from rest_framework import serializers
 
+
+class BaseAccessToAddressSerializer(serializers.ModelSerializer):
     class Meta:
-        model = AccessToAddress
+        model = None  # Цей клас не повинен мати конкретну модель
         fields = ['id', 'bazhay_user', 'asked_bazhay_user', 'is_approved']
         read_only_fields = ['id', 'is_approved']
 
@@ -491,9 +493,19 @@ class AccessToAddressSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         bazhay_user = self.context['request'].user
 
-        access_request = AccessToAddress.objects.create(
+        access_request = self.Meta.model.objects.create(
             bazhay_user=bazhay_user,
             asked_bazhay_user=validated_data.get('asked_bazhay_user')
         )
 
         return access_request
+
+
+class AccessToAddressSerializer(BaseAccessToAddressSerializer):
+    class Meta(BaseAccessToAddressSerializer.Meta):
+        model = AccessToAddress
+
+
+class AccessToPostAddressSerializer(BaseAccessToAddressSerializer):
+    class Meta(BaseAccessToAddressSerializer.Meta):
+        model = AccessToPostAddress

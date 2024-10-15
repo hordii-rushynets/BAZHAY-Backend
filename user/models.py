@@ -107,10 +107,21 @@ class PostAddress(BaseAddress):
         return f"{self.user.username}, {self.nearest_branch}"
 
 
-class AccessToAddress(models.Model):
-    bazhay_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='given_access_to_address')
-    asked_bazhay_user = models.ForeignKey(BazhayUser, on_delete=models.CASCADE, related_name='requested_access_to_address')
+class BaseAccessToAddress(models.Model):
+    bazhay_user = models.ForeignKey('BazhayUser', on_delete=models.CASCADE, related_name='%(class)s_given_access_to_address')
+    asked_bazhay_user = models.ForeignKey('BazhayUser', on_delete=models.CASCADE, related_name='%(class)s_requested_access_to_address')
     is_approved = models.BooleanField(default=False)
+
+    class Meta:
+        abstract = True
 
     def __str__(self):
         return f"{self.asked_bazhay_user} asked access to {self.bazhay_user}"
+
+
+class AccessToAddress(BaseAccessToAddress):
+    pass
+
+
+class AccessToPostAddress(BaseAccessToAddress):
+    pass

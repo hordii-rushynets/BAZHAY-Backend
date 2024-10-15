@@ -12,7 +12,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from django.db.models import Subquery
 
-from .models import BazhayUser, Address, PostAddress, AccessToAddress
+from .models import BazhayUser, Address, PostAddress, AccessToAddress, AccessToPostAddress
 from .authentication import IgnoreInvalidTokenAuthentication
 from .serializers import (CreateUserSerializer,
                           ConfirmCodeSerializer,
@@ -26,7 +26,9 @@ from .serializers import (CreateUserSerializer,
                           ReturnBazhayUserSerializer,
                           AddressSerializer,
                           PostAddressSerializer,
-                          AccessToAddressSerializer)
+                          AccessToAddressSerializer,
+                          AccessToPostAddressSerializer)
+
 from .utils import save_and_send_confirmation_code
 from .filters import BazhayUserFilter
 
@@ -374,21 +376,6 @@ class BaseAddressViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
     http_method_names = ['get', 'put', 'patch', 'delete']
 
-    def get_queryset(self):
-        """
-        Returns the queryset filtered by the currently authenticated user.
-        :return: QuerySet The queryset containing address instances related to the current user.
-        """
-        allowed_users = AccessToAddress.objects.filter(
-            asked_bazhay_user=self.request.user,
-            is_approved=True
-        ).values('bazhay_user')
-
-        return self.queryset.filter(
-            Q(user=self.request.user) |
-            Q(user__in=Subquery(allowed_users))
-        )
-
     def create_default_address(self):
         """This should be overridden in subclasses for a particular model."""
         raise NotImplementedError('create_default_address method should be implemented in subclasses.')
@@ -430,6 +417,17 @@ class AddressViewSet(BaseAddressViewSet):
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
 
+    def get_queryset(self):
+        allowed_users = AccessToAddress.objects.filter(
+            asked_bazhay_user=self.request.user,
+            is_approved=True
+        ).values('bazhay_user')
+
+        return self.queryset.filter(
+            Q(user=self.request.user) |
+            Q(user__in=Subquery(allowed_users))
+        )
+
     def create_default_address(self) -> Address:
         """Creates a default Address instance for the current authenticated user.
 
@@ -442,6 +440,17 @@ class PostAddressViewSet(BaseAddressViewSet):
     queryset = PostAddress.objects.all()
     serializer_class = PostAddressSerializer
 
+    def get_queryset(self):
+        allowed_users = AccessToPostAddress.objects.filter(
+            asked_bazhay_user=self.request.user,
+            is_approved=True
+        ).values('bazhay_user')
+
+        return self.queryset.filter(
+            Q(user=self.request.user) |
+            Q(user__in=Subquery(allowed_users))
+        )
+
     def create_default_address(self) -> PostAddress:
         """
         Creates a default PostAddress instance for the current authenticated user.
@@ -450,17 +459,20 @@ class PostAddressViewSet(BaseAddressViewSet):
         return PostAddress.objects.create(user=self.request.user)
 
 
-class CreateAccessRequest(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    queryset = AccessToAddress.objects.all()
-    serializer_class = AccessToAddressSerializer
+class BaseAccessRequestViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    serializer_class = None
+    model = None
+
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
 
 
-class GetAccessRequest(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
-    queryset = AccessToAddress.objects.all()
-    serializer_class = AccessToAddressSerializer
+class BaseGetAccessRequestViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    serializer_class = None
+    model = None
 
     def get_queryset(self):
-        return self.queryset.filter(asked_bazhay_user=self.request.user)
+        return self.model.objects.filter(asked_bazhay_user=self.request.user)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def approved(self, request, pk=None):
@@ -475,5 +487,30 @@ class GetAccessRequest(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewset
 
             return Response(status=status.HTTP_200_OK)
 
-        except AccessToAddress.DoesNotExist:
+        except self.model.DoesNotExist:
             return Response({"detail": "Запити невідомі."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class CreateAccessRequestViewSet(BaseAccessRequestViewSet):
+    queryset = AccessToAddress.objects.all()
+    serializer_class = AccessToAddressSerializer
+    model = AccessToAddress
+
+
+class GetAccessRequestViewSet(BaseGetAccessRequestViewSet):
+    queryset = AccessToAddress.objects.all()
+    serializer_class = AccessToAddressSerializer
+    model = AccessToAddress
+
+
+class CreatePostAddressAccessRequestViewSet(BaseAccessRequestViewSet):
+    queryset = AccessToPostAddress.objects.all()
+    serializer_class = AccessToPostAddressSerializer
+    model = AccessToPostAddress
+
+
+class GetPostAddressAccessRequestViewSet(BaseGetAccessRequestViewSet):
+    queryset = AccessToPostAddress.objects.all()
+    serializer_class = AccessToPostAddressSerializer
+    model = AccessToPostAddress
+
