@@ -6,7 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from notifications.models import Notification
+
 
 SEX_CHOICES = [
     ('M', 'Male'),
@@ -135,90 +135,92 @@ class AccessToPostAddress(BaseAccessToAddress):
 @receiver(post_save, sender=AccessToPostAddress)
 def send_notification_access_to_address(sender, instance, created, **kwargs):
     from ability.models import create_message, create_button
+    from notifications.models import Notification
 
     if created:
         message_uk = f'@{instance.bazhay_user.username} хоче тобі надіслати подарунок і запитує дозвіл подивитись адресу твого поштового відділення. Ти хочеш, щоб цей користувач побачив її?'
         message_en = f'@{instance.bazhay_user.username} wants to send you a gift and asks permission to see your post office address. Do you want this user to see it?'
 
-    buttons = [
-        create_button(
-            'Yes',
-            'Так',
-            f'api/account/get-access-post-address/{instance.id}/approved/',
-            '',
-            '',
-            'That\'s great! Very soon you will be happier with the wish you have received.',
-            'Чудово! Зовсім скоро ти станеш щасливіше від отриманого бажання.',
-            '',
-            '',
-        ),
-        create_button(
-            'No',
-            'Ні'
+        buttons = [
+            create_button(
+                'Yes',
+                'Так',
+                f'api/account/get-access-post-address/{instance.id}/approved/',
+                '',
+                '',
+                'That\'s great! Very soon you will be happier with the wish you have received.',
+                'Чудово! Зовсім скоро ти станеш щасливіше від отриманого бажання.',
+                '',
+                '',
+            ),
+            create_button(
+                'No',
+                'Ні'
+            )
+        ]
+
+        notification_to_send = create_message(button=buttons, text_en=message_en, text_uk=message_uk)
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            f"user_{instance.asked_bazhay_user.id}",
+            {
+                'type': 'send_notification',
+                'message': notification_to_send
+            }
         )
-    ]
 
-    notification_to_send = create_message(button=buttons, text_en=message_en, text_uk=message_uk)
-    channel_layer = get_channel_layer()
-
-    async_to_sync(channel_layer.group_send)(
-        f"user_{instance.asked_bazhay_user.id}",
-        {
-            'type': 'send_notification',
-            'message': notification_to_send
-        }
-    )
-
-    notification = Notification.objects.create(
-        message_uk=message_uk,
-        message_en=message_en,
-        button=buttons
-    )
-    notification.save()
-    notification.users.set([instance.reservation.wish.author])
+        notification = Notification.objects.create(
+            message_uk=message_uk,
+            message_en=message_en,
+            button=buttons
+        )
+        notification.save()
+        notification.users.set([instance.reservation.wish.author])
 
 
 @receiver(post_save, sender=AccessToAddress)
 def send_notification_access_to_address(sender, instance, created, **kwargs):
     from ability.models import create_message, create_button
+    from notifications.models import Notification
 
     if created:
         message_uk = f'@{instance.bazhay_user.username} хоче тобі надіслати подарунок і запитує дозвіл подивитись твою адресу. Ти хочеш, щоб цей користувач побачив її?'
         message_en = f'@{instance.bazhay_user.username} wants to send you a gift and asks permission to see your address. Do you want this user to see it?n '
 
-    buttons = [
-        create_button(
-            'Yes',
-            'Так',
-            f'api/account/get-access-address/{instance.id}/approved/',
-            '',
-            '',
-            'That\'s great! Very soon you will be happier with the wish you have received.',
-            'Чудово! Зовсім скоро ти станеш щасливіше від отриманого бажання.',
-            '',
-            '',
-        ),
-        create_button(
-            'No',
-            'Ні'
+        buttons = [
+            create_button(
+                'Yes',
+                'Так',
+                f'api/account/get-access-address/{instance.id}/approved/',
+                '',
+                '',
+                'That\'s great! Very soon you will be happier with the wish you have received.',
+                'Чудово! Зовсім скоро ти станеш щасливіше від отриманого бажання.',
+                '',
+                '',
+            ),
+            create_button(
+                'No',
+                'Ні'
+            )
+        ]
+
+        notification_to_send = create_message(button=buttons, text_en=message_en, text_uk=message_uk)
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            f"user_{instance.asked_bazhay_user.id}",
+            {
+                'type': 'send_notification',
+                'message': notification_to_send
+            }
         )
-    ]
 
-    notification_to_send = create_message(button=buttons, text_en=message_en, text_uk=message_uk)
-    channel_layer = get_channel_layer()
-
-    async_to_sync(channel_layer.group_send)(
-        f"user_{instance.asked_bazhay_user.id}",
-        {
-            'type': 'send_notification',
-            'message': notification_to_send
-        }
-    )
-
-    notification = Notification.objects.create(
-        message_uk=message_uk,
-        message_en=message_en,
-        button=buttons
-    )
-    notification.save()
-    notification.users.set([instance.reservation.wish.author])
+        notification = Notification.objects.create(
+            message_uk=message_uk,
+            message_en=message_en,
+            button=buttons
+        )
+        notification.save()
+        notification.users.set([instance.reservation.wish.author])
