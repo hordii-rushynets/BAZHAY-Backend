@@ -466,10 +466,9 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
         return obj.is_premium()
 
 
-from rest_framework import serializers
-
-
 class BaseAccessToAddressSerializer(serializers.ModelSerializer):
+    bazhay_user = ReturnBazhayUserSerializer(read_only=True)
+
     class Meta:
         model = None  # Цей клас не повинен мати конкретну модель
         fields = ['id', 'bazhay_user', 'asked_bazhay_user', 'is_approved']

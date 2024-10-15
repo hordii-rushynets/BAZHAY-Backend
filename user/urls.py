@@ -25,8 +25,8 @@ router.register(r'user/address', AddressViewSet, basename='users_address')
 router.register(r'user/post-address', PostAddressViewSet, basename='users_post_address')
 router.register(r'create-access-address', CreateAccessRequestViewSet, basename='create-access-request')
 router.register(r'get-access-address', GetAccessRequestViewSet, basename='get-access-request')
-router.register(r'create-access-post-address', CreatePostAddressAccessRequestViewSet, basename='create-access-request')
-router.register(r'get-access-post-address', GetPostAddressAccessRequestViewSet, basename='get-access-request')
+router.register(r'create-access-post-address', CreatePostAddressAccessRequestViewSet, basename='create-access-post-address')
+router.register(r'get-access-post-address', GetPostAddressAccessRequestViewSet, basename='get-access-post-address')
 
 urlpatterns = router.urls + [
     path('user/', UpdateUserViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})),
