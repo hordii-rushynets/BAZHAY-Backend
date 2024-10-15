@@ -12,6 +12,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from django.db.models import Subquery
 
+from ability.filters import WishFilter
 from .models import BazhayUser, Address, PostAddress, AccessToAddress, AccessToPostAddress
 from .authentication import IgnoreInvalidTokenAuthentication
 from .serializers import (CreateUserSerializer,
@@ -30,7 +31,7 @@ from .serializers import (CreateUserSerializer,
                           AccessToPostAddressSerializer)
 
 from .utils import save_and_send_confirmation_code
-from .filters import BazhayUserFilter
+from .filters import BazhayUserFilter, PostAddressFilter, AddressFilter
 
 from permission.permissions import (IsRegisteredUser,
                                     IsRegisteredUserOrReadOnly,
@@ -375,6 +376,7 @@ class BaseAddressViewSet(viewsets.ModelViewSet):
     """Base viewset for handling address-related operations for authenticated users."""
     permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
     http_method_names = ['get', 'put', 'patch', 'delete']
+    filter_backends = (DjangoFilterBackend,)
 
     def create_default_address(self):
         """This should be overridden in subclasses for a particular model."""
@@ -416,6 +418,7 @@ class AddressViewSet(BaseAddressViewSet):
     """Viewset for handling CRUD operations related to the Address model."""
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
+    filterset_class = AddressFilter
 
     def get_queryset(self):
         allowed_users = AccessToAddress.objects.filter(
@@ -439,6 +442,7 @@ class PostAddressViewSet(BaseAddressViewSet):
     """Viewset for handling CRUD operations related to the PostAddress model."""
     queryset = PostAddress.objects.all()
     serializer_class = PostAddressSerializer
+    filterset_class = PostAddressFilter
 
     def get_queryset(self):
         allowed_users = AccessToPostAddress.objects.filter(

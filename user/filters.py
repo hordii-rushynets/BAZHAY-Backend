@@ -2,7 +2,7 @@ import django_filters
 from django.db.models import QuerySet, Q
 
 
-from .models import BazhayUser
+from .models import BazhayUser, Address, PostAddress
 
 
 class BazhayUserFilter(django_filters.FilterSet):
@@ -39,3 +39,22 @@ class BazhayUserFilter(django_filters.FilterSet):
                                    Q(last_name__icontains=last_name, last_name__isnull=False))
 
         return queryset
+
+
+class BaseAddressFilter(django_filters.FilterSet):
+    user = django_filters.NumberFilter(field_name="user__id")
+
+    class Meta:
+        abstract = True
+        fields = ['user']
+
+
+class AddressFilter(BaseAddressFilter):
+    class Meta:
+        model = Address
+
+
+class PostAddressFilter(BaseAddressFilter):
+    class Meta:
+        model = PostAddress
+

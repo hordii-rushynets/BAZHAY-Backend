@@ -482,7 +482,7 @@ class BaseAccessToAddressSerializer(serializers.ModelSerializer):
     bazhay_user = ReturnBazhayUserSerializer(read_only=True)
 
     class Meta:
-        model = None  # Цей клас не повинен мати конкретну модель
+        model = None
         fields = ['id', 'bazhay_user', 'asked_bazhay_user', 'is_approved']
         read_only_fields = ['id', 'is_approved']
 
