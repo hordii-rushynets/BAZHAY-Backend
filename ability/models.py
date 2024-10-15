@@ -3,7 +3,6 @@ from typing import Optional
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
-from django.db.models import Q
 
 import ability.choices as choices
 
@@ -195,7 +194,6 @@ def send_notification_on_user_select(sender, instance, **kwargs):
             )
             notification_to_other_user.save()
             notification_to_other_user.users.set([candidate.bazhay_user])
-
 
 
 @receiver(post_save, sender=CandidatesForReservation)
