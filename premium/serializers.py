@@ -12,7 +12,7 @@ class PremiumSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Premium
-        fields = ['id', 'date_of_payment', 'is_active', 'is_an_annual_payment', 'expiration_date', 'code']
+        fields = ['id', 'date_of_payment', 'is_active', 'is_an_annual_payment', 'expiration_date', 'code', 'is_trial_period']
         read_only_fields = ['id', 'date_of_payment', 'is_active', 'expiration_date']
 
     def get_is_active(self, obj):
@@ -58,7 +58,8 @@ class TrialSubscriptionSerializer(serializers.Serializer):
             bazhay_user=bazhay_user,
             defaults={
                 'date_of_payment': timezone.now(),
-                'is_used_trial': True,
+                'is_used_trial': False,
+                'is_trial_period': True,
             }
         )
 

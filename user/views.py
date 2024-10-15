@@ -257,7 +257,7 @@ class GuestUserViewSet(viewsets.ViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UpdateUserPhotoViewSet(viewsets.ModelViewSet):
+class UpdateUserPhotoViewSet(mixins.UpdateModelMixin, viewsets.GenericViewSet):
     """
     ViewSet for updating the user's profile photo.
 
@@ -275,11 +275,9 @@ class UpdateUserPhotoViewSet(viewsets.ModelViewSet):
     def get_object(self):
         """
         Returns the user object that corresponds to the current authenticated user's ID.
-
-        Returns:
-            BazhayUser: The user instance associated with the authenticated user.
+        :returns BazhayUser: The user instance associated with the authenticated user.
         """
-        return self.queryset.filter(id=self.request.user.id).first()
+        return self.request.user
 
 
 class GoogleLoginView(mixins.CreateModelMixin, viewsets.GenericViewSet):
