@@ -1,7 +1,7 @@
 from django.core.cache import cache
 from rest_framework import serializers
 
-from .models import BazhayUser, Address, PostAddress, AccessToAddress
+from .models import BazhayUser, Address, PostAddress
 
 from subscription.models import Subscription
 
@@ -464,10 +464,3 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
 
     def get_is_premium(self, obj: BazhayUser) -> bool:
         return obj.is_premium()
-
-
-class AccessToAddressSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = AccessToAddress
-        fields = ['bazhay_user', 'asked_bazhay_user', 'is_approved']

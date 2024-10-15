@@ -96,3 +96,12 @@ class Address(BaseAddress):
 
     def __str__(self):
         return f"{self.user.username}, {self.country} {self.region} {self.city}"
+
+
+class PostAddress(BaseAddress):
+    """Model representing a postal address, extending BaseAddress to include post service and nearest branch."""
+    post_service = models.CharField(max_length=100, blank=True, default='')
+    nearest_branch = models.CharField(max_length=100, blank=True, default='')
+
+    def __str__(self):
+        return f"{self.user.username}, {self.nearest_branch}"
