@@ -161,19 +161,21 @@ class UpdateUserSerializers(serializers.ModelSerializer):
         request_user = self.context['request'].user
         return Subscription.is_subscribed(request_user, obj)
 
-    def get_is_addresses(self, obj: BazhayUser) -> bool:
+    def get_is_addresses(self, obj: BazhayUser) -> int | None:
         """
-        Returns whether the given user has access to addresses.
+        Returns the ID of the address associated with the given user.
         :args obj (BazhayUser): The user object to check access to addresses.
         """
-        return Address.objects.filter(user=obj).exists()
+        address = Address.objects.filter(user=obj).first()
+        return address.id if address else None
 
-    def get_is_post_addresses(self, obj: BazhayUser) -> bool:
+    def get_is_post_addresses(self, obj: BazhayUser) -> int | None:
         """
-        Returns whether the given user has access to post addresses.
+        Returns the ID of the post address associated with the given user.
         :args obj (BazhayUser): The user object to check access to post addresses.
         """
-        return PostAddress.objects.filter(user=obj).exists()
+        post_address = PostAddress.objects.filter(user=obj).first()
+        return post_address.id if post_address else None
 
 
 class EmailUpdateSerializer(serializers.Serializer):
@@ -483,19 +485,21 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
     def get_is_premium(self, obj: BazhayUser) -> bool:
         return obj.is_premium()
 
-    def get_is_addresses(self, obj: BazhayUser) -> bool:
+    def get_is_addresses(self, obj: BazhayUser) -> int | None:
         """
-        Returns whether the given user has access to addresses.
+        Returns the ID of the address associated with the given user.
         :args obj (BazhayUser): The user object to check access to addresses.
         """
-        return Address.objects.filter(user=obj).exists()
+        address = Address.objects.filter(user=obj).first()
+        return address.id if address else None
 
-    def get_is_post_addresses(self, obj: BazhayUser) -> bool:
+    def get_is_post_addresses(self, obj: BazhayUser) -> int | None:
         """
-        Returns whether the given user has access to post addresses.
+        Returns the ID of the post address associated with the given user.
         :args obj (BazhayUser): The user object to check access to post addresses.
         """
-        return PostAddress.objects.filter(user=obj).exists()
+        post_address = PostAddress.objects.filter(user=obj).first()
+        return post_address.id if post_address else None
 
 
 class BaseAccessToAddressSerializer(serializers.ModelSerializer):
