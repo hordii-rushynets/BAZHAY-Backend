@@ -121,12 +121,14 @@ class UpdateUserSerializers(serializers.ModelSerializer):
     subscriber = serializers.SerializerMethodField()
     is_premium = serializers.SerializerMethodField()
     is_subscribed = serializers.SerializerMethodField()
+    is_addresses = serializers.SerializerMethodField()
+    is_post_addresses = serializers.SerializerMethodField()
 
     class Meta:
         model = BazhayUser
         fields = ['id', 'photo', 'email', 'first_name', 'last_name', 'username',
                   'birthday', 'view_birthday', 'about_user', 'sex', 'is_guest', 'is_premium', 'is_already_registered',
-                  'is_subscribed', 'subscription', 'subscriber', ]
+                  'is_subscribed', 'subscription', 'subscriber', 'is_addresses', 'is_post_addresses']
 
     def get_subscription(self, obj):
         """
@@ -447,11 +449,15 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
     subscriber = serializers.SerializerMethodField()
     is_premium = serializers.SerializerMethodField()
+    is_addresses = serializers.SerializerMethodField()
+    is_post_addresses = serializers.SerializerMethodField()
 
     class Meta:
         model = BazhayUser
-        fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber', 'is_premium']
-        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber', 'is_premium']
+        fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber',
+                  'is_premium', 'is_addresses', 'is_post_addresses']
+        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber',
+                            'is_premium', 'is_addresses', 'is_post_addresses']
 
     def get_is_subscribed(self, obj: BazhayUser) -> bool:
         """
@@ -476,6 +482,20 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
 
     def get_is_premium(self, obj: BazhayUser) -> bool:
         return obj.is_premium()
+
+    def get_is_addresses(self, obj: BazhayUser) -> bool:
+        """
+        Returns whether the given user has access to addresses.
+        :args obj (BazhayUser): The user object to check access to addresses.
+        """
+        return Address.objects.filter(user=obj).exists()
+
+    def get_is_post_addresses(self, obj: BazhayUser) -> bool:
+        """
+        Returns whether the given user has access to post addresses.
+        :args obj (BazhayUser): The user object to check access to post addresses.
+        """
+        return PostAddress.objects.filter(user=obj).exists()
 
 
 class BaseAccessToAddressSerializer(serializers.ModelSerializer):

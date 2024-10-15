@@ -12,7 +12,6 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from django.db.models import Subquery
 
-from ability.filters import WishFilter
 from .models import BazhayUser, Address, PostAddress, AccessToAddress, AccessToPostAddress
 from .authentication import IgnoreInvalidTokenAuthentication
 from .serializers import (CreateUserSerializer,
@@ -476,7 +475,7 @@ class BaseGetAccessRequestViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
     model = None
 
     def get_queryset(self):
-        return self.model.objects.filter(asked_bazhay_user=self.request.user)
+        return self.queryset.filter(asked_bazhay_user=self.request.user)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def approved(self, request, pk=None):
@@ -492,7 +491,23 @@ class BaseGetAccessRequestViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
             return Response(status=status.HTTP_200_OK)
 
         except self.model.DoesNotExist:
-            return Response({"detail": "Запити невідомі."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "The requests are unknown."}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def not_approved(self, request, pk=None):
+        try:
+            access_request = self.get_object()
+
+            if access_request.bazhay_user != request.user:
+                return Response({"detail": "You cannot confirm this request."}, status=status.HTTP_403_FORBIDDEN)
+
+            access_request.is_not_approved = True
+            access_request.save()
+
+            return Response(status=status.HTTP_200_OK)
+
+        except self.model.DoesNotExist:
+            return Response({"detail": "The requests are unknown."}, status=status.HTTP_404_NOT_FOUND)
 
 
 class CreateAccessRequestViewSet(BaseAccessRequestViewSet):
