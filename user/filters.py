@@ -46,15 +46,16 @@ class BaseAddressFilter(django_filters.FilterSet):
 
     class Meta:
         abstract = True
-        fields = ['user']
 
 
 class AddressFilter(BaseAddressFilter):
     class Meta:
         model = Address
+        fields = ['user']
 
 
 class PostAddressFilter(BaseAddressFilter):
     class Meta:
         model = PostAddress
+        fields = ['user']
 
