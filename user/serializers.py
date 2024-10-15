@@ -154,12 +154,24 @@ class UpdateUserSerializers(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         """
         Returns whether the requesting user (from the context) is subscribed to the given user.
-
-        Args:
-            obj (BazhayUser): The user object to check the subscription status for.
+        :args obj (BazhayUser): The user object to check the subscription status for.
         """
         request_user = self.context['request'].user
         return Subscription.is_subscribed(request_user, obj)
+
+    def get_is_addresses(self, obj: BazhayUser) -> bool:
+        """
+        Returns whether the given user has access to addresses.
+        :args obj (BazhayUser): The user object to check access to addresses.
+        """
+        return Address.objects.filter(user=obj).exists()
+
+    def get_is_post_addresses(self, obj: BazhayUser) -> bool:
+        """
+        Returns whether the given user has access to post addresses.
+        :args obj (BazhayUser): The user object to check access to post addresses.
+        """
+        return PostAddress.objects.filter(user=obj).exists()
 
 
 class EmailUpdateSerializer(serializers.Serializer):
