@@ -41,20 +41,17 @@ class BazhayUserFilter(django_filters.FilterSet):
         return queryset
 
 
-class BaseAddressFilter(django_filters.FilterSet):
+class AddressFilter(django_filters.FilterSet):
     user = django_filters.NumberFilter(field_name="user__id")
 
-    class Meta:
-        abstract = True
-
-
-class AddressFilter(BaseAddressFilter):
     class Meta:
         model = Address
         fields = ['user']
 
 
-class PostAddressFilter(BaseAddressFilter):
+class PostAddressFilter(django_filters.FilterSet):
+    user = django_filters.NumberFilter(field_name="user__id")
+
     class Meta:
         model = PostAddress
         fields = ['user']
