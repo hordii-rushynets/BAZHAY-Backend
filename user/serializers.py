@@ -1,8 +1,7 @@
 from django.core.cache import cache
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
-from .models import BazhayUser, Address, PostAddress
+from .models import BazhayUser, Address, PostAddress, AccessToAddress
 
 from subscription.models import Subscription
 
@@ -408,15 +407,10 @@ class GoogleAuthSerializer(serializers.ModelSerializer):
         """
         Creates or retrieves a BazhayUser based on the validated token data.
 
-        Args:
-            validated_data (dict): The data returned by the validate method, which includes
+        :args validated_data (dict): The data returned by the validate method, which includes
                                    decoded information from the token.
+        :returns BazhayUser: The user object that was created or retrieved.
 
-        Returns:
-            BazhayUser: The user object that was created or retrieved.
-
-        Raises:
-            serializers.ValidationError: If there is an error while creating or retrieving the user.
         """
         try:
             user, created = BazhayUser.objects.get_or_create(
@@ -468,6 +462,12 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
         """
         return obj.subscribers.count()
 
-
     def get_is_premium(self, obj: BazhayUser) -> bool:
         return obj.is_premium()
+
+
+class AccessToAddressSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = AccessToAddress
+        fields = ['bazhay_user', 'asked_bazhay_user', 'is_approved']
