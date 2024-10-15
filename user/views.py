@@ -9,8 +9,10 @@ from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination
 
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Q
+from django.db.models import Subquery
 
-from .models import BazhayUser, Address, PostAddress
+from .models import BazhayUser, Address, PostAddress, AccessToAddress
 from .authentication import IgnoreInvalidTokenAuthentication
 from .serializers import (CreateUserSerializer,
                           ConfirmCodeSerializer,
@@ -23,13 +25,14 @@ from .serializers import (CreateUserSerializer,
                           GoogleAuthSerializer,
                           ReturnBazhayUserSerializer,
                           AddressSerializer,
-                          PostAddressSerializer)
+                          PostAddressSerializer,
+                          AccessToAddressSerializer)
 from .utils import save_and_send_confirmation_code
 from .filters import BazhayUserFilter
 
 from permission.permissions import (IsRegisteredUser,
                                     IsRegisteredUserOrReadOnly,
-                                    IsOwner)
+                                    IsAuthorOrReadOnly)
 
 
 def is_valid(serializer: serializers.Serializer) -> Response:
@@ -368,7 +371,7 @@ class ListUserViewSet(viewsets.ReadOnlyModelViewSet):
 
 class BaseAddressViewSet(viewsets.ModelViewSet):
     """Base viewset for handling address-related operations for authenticated users."""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
     http_method_names = ['get', 'put', 'patch', 'delete']
 
     def get_queryset(self):
@@ -376,7 +379,15 @@ class BaseAddressViewSet(viewsets.ModelViewSet):
         Returns the queryset filtered by the currently authenticated user.
         :return: QuerySet The queryset containing address instances related to the current user.
         """
-        return self.queryset.filter(user=self.request.user)
+        allowed_users = AccessToAddress.objects.filter(
+            asked_bazhay_user=self.request.user,
+            is_approved=True
+        ).values('bazhay_user')
+
+        return self.queryset.filter(
+            Q(user=self.request.user) |
+            Q(user__in=Subquery(allowed_users))
+        )
 
     def create_default_address(self):
         """This should be overridden in subclasses for a particular model."""
@@ -437,3 +448,32 @@ class PostAddressViewSet(BaseAddressViewSet):
         :returns: A newly created PostAddress instance.
         """
         return PostAddress.objects.create(user=self.request.user)
+
+
+class CreateAccessRequest(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = AccessToAddress.objects.all()
+    serializer_class = AccessToAddressSerializer
+
+
+class GetAccessRequest(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    queryset = AccessToAddress.objects.all()
+    serializer_class = AccessToAddressSerializer
+
+    def get_queryset(self):
+        return self.queryset.filter(asked_bazhay_user=self.request.user)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def approved(self, request, pk=None):
+        try:
+            access_request = self.get_object()
+
+            if access_request.bazhay_user != request.user:
+                return Response({"detail": "You cannot confirm this request."}, status=status.HTTP_403_FORBIDDEN)
+
+            access_request.is_approved = True
+            access_request.save()
+
+            return Response(status=status.HTTP_200_OK)
+
+        except AccessToAddress.DoesNotExist:
+            return Response({"detail": "Запити невідомі."}, status=status.HTTP_404_NOT_FOUND)

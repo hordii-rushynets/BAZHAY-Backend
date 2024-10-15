@@ -470,4 +470,30 @@ class AccessToAddressSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AccessToAddress
-        fields = ['bazhay_user', 'asked_bazhay_user', 'is_approved']
+        fields = ['id', 'bazhay_user', 'asked_bazhay_user', 'is_approved']
+        read_only_fields = ['id', 'is_approved']
+
+    def validate(self, data):
+        asked_bazhay_user_id = self.initial_data.get('asked_bazhay_user')
+
+        if not asked_bazhay_user_id:
+            raise serializers.ValidationError("The user ID of the accessed user is not passed.")
+
+        try:
+            asked_bazhay_user = BazhayUser.objects.get(id=asked_bazhay_user_id)
+        except BazhayUser.DoesNotExist:
+            raise serializers.ValidationError(f"The user with id {asked_bazhay_user_id} does not exist.")
+
+        data['asked_bazhay_user'] = asked_bazhay_user
+
+        return data
+
+    def create(self, validated_data):
+        bazhay_user = self.context['request'].user
+
+        access_request = AccessToAddress.objects.create(
+            bazhay_user=bazhay_user,
+            asked_bazhay_user=validated_data.get('asked_bazhay_user')
+        )
+
+        return access_request

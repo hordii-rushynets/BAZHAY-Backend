@@ -11,7 +11,9 @@ from .views import (AuthViewSet,
                     GoogleLoginView,
                     ListUserViewSet,
                     AddressViewSet,
-                    PostAddressViewSet)
+                    PostAddressViewSet,
+                    CreateAccessRequest,
+                    GetAccessRequest)
 
 router = DefaultRouter()
 router.register(r'auth', AuthViewSet, basename='auth')
@@ -20,6 +22,8 @@ router.register(r'user/update-email', UpdateUserEmailViewSet, basename='update_e
 router.register(r'users', ListUserViewSet, basename='users_list')
 router.register(r'user/address', AddressViewSet, basename='users_address')
 router.register(r'user/post-address', PostAddressViewSet, basename='users_post_address')
+router.register(r'create-access-request', CreateAccessRequest, basename='create-access-request')
+router.register(r'get-access-request', GetAccessRequest, basename='get-access-request')
 
 urlpatterns = router.urls + [
     path('user/', UpdateUserViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})),

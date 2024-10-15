@@ -114,4 +114,3 @@ class AccessToAddress(models.Model):
 
     def __str__(self):
         return f"{self.asked_bazhay_user} asked access to {self.bazhay_user}"
-
