@@ -420,14 +420,16 @@ class AddressViewSet(BaseAddressViewSet):
     filterset_class = AddressFilter
 
     def get_queryset(self):
+        user = self.request.user
+
         allowed_users = AccessToAddress.objects.filter(
-            asked_bazhay_user=self.request.user,
+            bazhay_user=user,
             is_approved=True
-        ).values('bazhay_user')
+        ).values_list('asked_bazhay_user', flat=True)
 
         return self.queryset.filter(
-            Q(user=self.request.user) |
-            Q(user__in=Subquery(allowed_users))
+            Q(user=user) |
+            Q(user__in=allowed_users)
         )
 
     def create_default_address(self) -> Address:
@@ -444,14 +446,16 @@ class PostAddressViewSet(BaseAddressViewSet):
     filterset_class = PostAddressFilter
 
     def get_queryset(self):
+        user = self.request.user
+
         allowed_users = AccessToPostAddress.objects.filter(
-            asked_bazhay_user=self.request.user,
+            bazhay_user=user,
             is_approved=True
-        ).values('bazhay_user')
+        ).values_list('asked_bazhay_user', flat=True)
 
         return self.queryset.filter(
-            Q(user=self.request.user) |
-            Q(user__in=Subquery(allowed_users))
+            Q(user=user) |
+            Q(user__in=allowed_users)
         )
 
     def create_default_address(self) -> PostAddress:
