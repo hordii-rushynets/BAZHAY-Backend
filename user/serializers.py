@@ -545,8 +545,12 @@ class AddressSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def validate(self, data):
-        if Address.objects.filter(user=self.context['request'].user).exists():
-            raise serializers.ValidationError("An address for this user already exists. You cannot create another one.")
+        request = self.context['request']
+
+        if self.instance is None:
+            if Address.objects.filter(user=request.user).exists():
+                raise serializers.ValidationError(detail="A address for this user already exists.")
+
         return data
 
 
@@ -560,6 +564,10 @@ class PostAddressSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def validate(self, data):
-        if PostAddress.objects.filter(user=self.context['request'].user).exists():
-            raise serializers.ValidationError("A post address for this user already exists. You cannot create another one.")
+        request = self.context['request']
+
+        if self.instance is None:
+            if PostAddress.objects.filter(user=request.user).exists():
+                raise serializers.ValidationError(detail="A post address for this user already exists.")
+
         return data
