@@ -7,10 +7,11 @@ from rest_framework.request import Request
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import PermissionDenied
 
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
-from rest_framework.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
 
 from .models import BazhayUser, Address, PostAddress, AccessToAddress, AccessToPostAddress
 from .authentication import IgnoreInvalidTokenAuthentication
@@ -30,7 +31,7 @@ from .serializers import (CreateUserSerializer,
                           AccessToPostAddressSerializer)
 
 from .utils import save_and_send_confirmation_code
-from .filters import BazhayUserFilter, PostAddressFilter, AddressFilter
+from .filters import BazhayUserFilter
 
 from permission.permissions import (IsRegisteredUser,
                                     IsRegisteredUserOrReadOnly,
@@ -376,6 +377,13 @@ class BaseAddressViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
     http_method_names = ['get', 'put', 'patch', 'delete']
 
+    def get_object(self):
+        queryset = self.get_queryset()
+
+        obj = get_object_or_404(queryset, pk=self.kwargs.get('pk'))
+
+        return obj
+
     def create_default_address(self):
         """This should be overridden in subclasses for a particular model."""
         raise NotImplementedError('create_default_address method should be implemented in subclasses.')
@@ -431,8 +439,6 @@ class AddressViewSet(BaseAddressViewSet):
     """Viewset for handling CRUD operations related to the Address model."""
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = AddressFilter
 
     def get_queryset(self):
         user = self.request.user
@@ -442,12 +448,10 @@ class AddressViewSet(BaseAddressViewSet):
             is_approved=True
         ).values_list('asked_bazhay_user', flat=True)
 
-        queryset = self.queryset.filter(
+        return self.queryset.filter(
             Q(user=user) |
             Q(user__in=allowed_users)
         )
-
-        return AddressFilter(self.request.GET, queryset=queryset).qs
 
     def create_default_address(self) -> Address:
         """Creates a default Address instance for the current authenticated user.
@@ -460,8 +464,6 @@ class PostAddressViewSet(BaseAddressViewSet):
     """Viewset for handling CRUD operations related to the PostAddress model."""
     queryset = PostAddress.objects.all()
     serializer_class = PostAddressSerializer
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = PostAddressFilter
 
     def get_queryset(self):
         user = self.request.user
@@ -471,12 +473,10 @@ class PostAddressViewSet(BaseAddressViewSet):
             is_approved=True
         ).values_list('asked_bazhay_user', flat=True)
 
-        queryset = self.queryset.filter(
+        return self.queryset.filter(
             Q(user=user) |
             Q(user__in=allowed_users)
         )
-
-        return PostAddressFilter(self.request.GET, queryset=queryset).qs
 
     def create_default_address(self) -> PostAddress:
         """

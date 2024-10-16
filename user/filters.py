@@ -39,20 +39,3 @@ class BazhayUserFilter(django_filters.FilterSet):
                                    Q(last_name__icontains=last_name, last_name__isnull=False))
 
         return queryset
-
-
-class AddressFilter(django_filters.FilterSet):
-    user_id = django_filters.NumberFilter(field_name='user__id', lookup_expr='exact', label='User ID')
-
-    class Meta:
-        model = Address
-        fields = ['user_id']  # You can add more fields here if needed
-
-
-class PostAddressFilter(django_filters.FilterSet):
-    user_id = django_filters.NumberFilter(field_name='user__id', lookup_expr='exact', label='User ID')
-
-    class Meta:
-        model = PostAddress
-        fields = ['user_id']  # You can add more fields here if needed
-
