@@ -179,17 +179,17 @@ def handle_access_request(instance, created, message_uk_template, message_en_tem
             )
         ]
 
-        send_notification(instance, instance.asked_bazhay_user.id, message_uk, message_en, buttons)
+        send_notification(instance, instance.asked_bazhay_user, message_uk, message_en, buttons)
 
     if instance.is_approved:
         message_uk = f'@{instance.asked_bazhay_user.username} підтвердив можливість подивитись адресу.'
         message_en = f'@{instance.asked_bazhay_user.username} confirmed the ability to view the address.'
-        send_notification(instance, instance.bazhay_user.id, message_uk, message_en, [])
+        send_notification(instance, instance.bazhay_user, message_uk, message_en, [])
 
     if instance.is_not_approved:
         message_uk = f'На жаль, @{instance.asked_bazhay_user.username} відхилив можливість подивитись адресу.'
         message_en = f'Unfortunately, @{instance.asked_bazhay_user.username} rejected the opportunity to view the address.'
-        send_notification(instance, instance.bazhay_user.id, message_uk, message_en, [])
+        send_notification(instance, instance.bazhay_user, message_uk, message_en, [])
 
 
 @receiver(post_save, sender=AccessToPostAddress)
