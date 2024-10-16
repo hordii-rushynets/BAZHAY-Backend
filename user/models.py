@@ -156,7 +156,7 @@ def send_notification(instance, recipient, message_uk, message_en, buttons):
 
 
 def handle_access_request(instance, created, message_uk_template, message_en_template, approval_url,
-                          approved_message_uk, approved_message_en, not_approved_message_uk, not_approved_message_en):
+                          approved_message_uk, approved_message_en, not_approved_message_uk, not_approved_message_en, not_approval_url=''):
     from ability.models import create_button
     if created:
         message_uk = message_uk_template.format(username=instance.bazhay_user.username)
@@ -166,7 +166,7 @@ def handle_access_request(instance, created, message_uk_template, message_en_tem
             create_button(
                 'Yes',
                 'Так',
-                approval_url.format(instance_id=instance.id),
+                f'{approval_url.format(instance_id=instance.id)}',
                 '',
                 '',
                 'That\'s great! Very soon you will be happier with the wish you have received.',
@@ -176,7 +176,8 @@ def handle_access_request(instance, created, message_uk_template, message_en_tem
             ),
             create_button(
                 'No',
-                'Ні'
+                'Ні',
+                url=approval_url.format(instance_id=instance.id)
             )
         ]
 
@@ -200,11 +201,12 @@ def send_notification_access_to_post_address(sender, instance, created, **kwargs
         created=created,
         message_uk_template='@{username} хоче тобі надіслати подарунок і запитує дозвіл подивитись адресу твого поштового відділення. Ти хочеш, щоб цей користувач побачив її?',
         message_en_template='@{username} wants to send you a gift and asks permission to see your post office address. Do you want this user to see it?',
-        approval_url='api/account/get-access-post-address/{instance_id}/approved/',
+        approval_url='/api/account/get-access-post-address/{instance_id}/approved/',
         approved_message_uk='@{username} підтвердив можливість подивитись адресу відділення його пошти. Перейди на сторінку користувача і дізнайся пошту.',
         approved_message_en='@{username} has confirmed the ability to view the address of his mailbox. Go to the user\'s page and find out the mail.',
         not_approved_message_uk='На жаль, @{username} відхилив можливість подивитись адресу відділення пошти.',
         not_approved_message_en='Unfortunately, @{username} declined the opportunity to view the post office address.',
+        not_approval_url='/api/account/get-access-post-address/{instance_id}/not_approved/'
 
     )
 
@@ -216,10 +218,11 @@ def send_notification_access_to_address(sender, instance, created, **kwargs):
         created=created,
         message_uk_template='@{username} хоче тобі надіслати подарунок і запитує дозвіл подивитись твою адресу. Ти хочеш, щоб цей користувач побачив її?',
         message_en_template='@{username} wants to send you a gift and asks permission to see your address. Do you want this user to see it?',
-        approval_url='api/account/get-access-address/{instance_id}/approved/',
+        approval_url='/api/account/get-access-address/{instance_id}/approved/',
         approved_message_uk='@{username} підтвердив можливість подивитись адресу.',
         approved_message_en='@{username} confirmed the ability to view the address.',
         not_approved_message_uk='На жаль, @{username} відхилив можливість подивитись адресу.',
         not_approved_message_en='Unfortunately, @{username} rejected the opportunity to view the address.',
+        not_approval_url='/api/account/get-access-address/{instance_id}/not_approved/',
     )
 
