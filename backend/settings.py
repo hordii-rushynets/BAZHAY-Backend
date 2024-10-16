@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'news',
     'premium',
     'notifications',
+    'technical_support',
 ]
 
 
