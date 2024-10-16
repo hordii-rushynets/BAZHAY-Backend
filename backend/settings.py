@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'news',
     'premium',
     'notifications',
+    'technical_support',
 ]
 
 
@@ -204,6 +205,7 @@ DEFAULT_FILE_STORAGE = 'backend.storages.CustomS3Boto3Storage'
 
 
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+
 
 
 # Default primary key field type

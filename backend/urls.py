@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/news/', include('news.urls')),
     path('api/premium/', include('premium.urls')),
     path('api/notifications/', include('notifications.urls')),
+    path('api/support/', include('technical_support.urls'))
 ]
 
 if settings.DEBUG:

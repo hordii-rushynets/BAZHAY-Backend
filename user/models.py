@@ -72,6 +72,9 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
         """Returns the string representation of the user, which is the email address."""
         return str(self.email)
 
+    def get_fullname(self) -> str:
+        return f'{self.first_name} {self.last_name}'
+
     def is_premium(self):
         try:
             return self.premium.is_active
@@ -225,4 +228,3 @@ def send_notification_access_to_address(sender, instance, created, **kwargs):
         not_approved_message_en='Unfortunately, @{username} rejected the opportunity to view the address.',
         not_approval_url='/api/account/get-access-address/{instance_id}/not_approved/',
     )
-
