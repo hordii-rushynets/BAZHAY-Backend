@@ -155,7 +155,8 @@ def send_notification(instance, recipient, message_uk, message_en, buttons):
     notification.users.set([recipient])
 
 
-def handle_access_request(instance, created, message_uk_template, message_en_template, approval_url):
+def handle_access_request(instance, created, message_uk_template, message_en_template, approval_url,
+                          approved_message_uk, approved_message_en, not_approved_message_uk, not_approved_message_en):
     from ability.models import create_button
     if created:
         message_uk = message_uk_template.format(username=instance.bazhay_user.username)
@@ -182,13 +183,13 @@ def handle_access_request(instance, created, message_uk_template, message_en_tem
         send_notification(instance, instance.asked_bazhay_user, message_uk, message_en, buttons)
 
     if instance.is_approved:
-        message_uk = f'@{instance.asked_bazhay_user.username} підтвердив можливість подивитись адресу.'
-        message_en = f'@{instance.asked_bazhay_user.username} confirmed the ability to view the address.'
+        message_uk = approved_message_uk.format(username=instance.asked_bazhay_user.username)
+        message_en = approved_message_en.format(username=instance.asked_bazhay_user.username)
         send_notification(instance, instance.bazhay_user, message_uk, message_en, [])
 
     if instance.is_not_approved:
-        message_uk = f'На жаль, @{instance.asked_bazhay_user.username} відхилив можливість подивитись адресу.'
-        message_en = f'Unfortunately, @{instance.asked_bazhay_user.username} rejected the opportunity to view the address.'
+        message_uk = not_approved_message_uk.format(username=instance.asked_bazhay_user.username)
+        message_en = not_approved_message_en.format(username=instance.asked_bazhay_user.username)
         send_notification(instance, instance.bazhay_user, message_uk, message_en, [])
 
 
@@ -199,7 +200,12 @@ def send_notification_access_to_post_address(sender, instance, created, **kwargs
         created=created,
         message_uk_template='@{username} хоче тобі надіслати подарунок і запитує дозвіл подивитись адресу твого поштового відділення. Ти хочеш, щоб цей користувач побачив її?',
         message_en_template='@{username} wants to send you a gift and asks permission to see your post office address. Do you want this user to see it?',
-        approval_url='api/account/get-access-post-address/{instance_id}/approved/'
+        approval_url='api/account/get-access-post-address/{instance_id}/approved/',
+        approved_message_uk='@{username} підтвердив можливість подивитись адресу відділення його пошти. Перейди на сторінку користувача і дізнайся пошту.',
+        approved_message_en='@{username} has confirmed the ability to view the address of his mailbox. Go to the user\'s page and find out the mail.',
+        not_approved_message_uk='На жаль, @{username} відхилив можливість подивитись адресу відділення пошти.',
+        not_approved_message_en='Unfortunately, @{username} declined the opportunity to view the post office address.',
+
     )
 
 
@@ -210,6 +216,10 @@ def send_notification_access_to_address(sender, instance, created, **kwargs):
         created=created,
         message_uk_template='@{username} хоче тобі надіслати подарунок і запитує дозвіл подивитись твою адресу. Ти хочеш, щоб цей користувач побачив її?',
         message_en_template='@{username} wants to send you a gift and asks permission to see your address. Do you want this user to see it?',
-        approval_url='api/account/get-access-address/{instance_id}/approved/'
+        approval_url='api/account/get-access-address/{instance_id}/approved/',
+        approved_message_uk='@{username} підтвердив можливість подивитись адресу.',
+        approved_message_en='@{username} confirmed the ability to view the address.',
+        not_approved_message_uk='На жаль, @{username} відхилив можливість подивитись адресу.',
+        not_approved_message_en='Unfortunately, @{username} rejected the opportunity to view the address.',
     )
 
