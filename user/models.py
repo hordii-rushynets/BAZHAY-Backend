@@ -68,6 +68,9 @@ class BazhayUser(AbstractBaseUser, PermissionsMixin):
         """Returns the string representation of the user, which is the email address."""
         return str(self.email)
 
+    def get_fullname(self) -> str:
+        return f'{self.first_name} {self.last_name}'
+
     def is_premium(self):
         try:
             return self.premium.is_active

@@ -79,3 +79,4 @@ ability/migrations
 news/migrations
 premium/migrations
 notifications/migrations
+technical_support/migrations
