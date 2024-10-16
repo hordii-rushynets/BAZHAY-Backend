@@ -177,7 +177,7 @@ def handle_access_request(instance, created, message_uk_template, message_en_tem
             create_button(
                 'No',
                 'Ні',
-                url=approval_url.format(instance_id=instance.id)
+                url=not_approval_url.format(instance_id=instance.id)
             )
         ]
 
