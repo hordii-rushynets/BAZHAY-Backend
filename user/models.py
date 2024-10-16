@@ -132,14 +132,14 @@ class AccessToPostAddress(BaseAccessToAddress):
     pass
 
 
-def send_notification(instance, recipient_id, message_uk, message_en, buttons):
+def send_notification(instance, recipient, message_uk, message_en, buttons):
     from ability.models import create_message
     from notifications.models import Notification
     notification_to_send = create_message(button=buttons, text_en=message_en, text_uk=message_uk)
     channel_layer = get_channel_layer()
 
     async_to_sync(channel_layer.group_send)(
-        f"user_{recipient_id}",
+        f"user_{recipient.id}",
         {
             'type': 'send_notification',
             'message': notification_to_send
@@ -152,7 +152,7 @@ def send_notification(instance, recipient_id, message_uk, message_en, buttons):
         button=buttons
     )
     notification.save()
-    notification.users.set([instance.bazhay_user])
+    notification.users.set([recipient])
 
 
 def handle_access_request(instance, created, message_uk_template, message_en_template, approval_url):

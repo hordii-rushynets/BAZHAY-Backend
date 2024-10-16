@@ -396,8 +396,9 @@ class BaseAddressViewSet(viewsets.ModelViewSet):
         :returns: A Response object containing serialized address data.
         """
         queryset = self.get_queryset()
+        my_address = self.get_queryset().filter(user=request.user)
 
-        if not queryset.exists():
+        if not my_address.exists():
             self.create_default_address()
 
         serializer = self.get_serializer(queryset, many=True)
