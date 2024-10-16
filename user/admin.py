@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import BazhayUser, Address, PostAddress
+from .models import BazhayUser, Address, PostAddress, AccessToAddress, AccessToPostAddress
 
 
 class BazhayUserAdmin(UserAdmin):
@@ -18,3 +18,5 @@ class BazhayUserAdmin(UserAdmin):
 admin.site.register(BazhayUser, BazhayUserAdmin)
 admin.site.register(Address)
 admin.site.register(PostAddress)
+admin.site.register(AccessToAddress)
+admin.site.register(AccessToPostAddress)

@@ -2,7 +2,7 @@ import django_filters
 from django.db.models import QuerySet, Q
 
 
-from .models import BazhayUser
+from .models import BazhayUser, Address, PostAddress
 
 
 class BazhayUserFilter(django_filters.FilterSet):

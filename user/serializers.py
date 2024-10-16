@@ -1,7 +1,7 @@
 from django.core.cache import cache
 from rest_framework import serializers
 
-from .models import BazhayUser, Address, PostAddress
+from .models import BazhayUser, Address, PostAddress, AccessToAddress, AccessToPostAddress
 
 from subscription.models import Subscription
 
@@ -90,22 +90,6 @@ class ConfirmCodeSerializer(serializers.Serializer):
         return data
 
 
-class AddressSerializer(serializers.ModelSerializer):
-    """Serializer for the Address model."""
-    class Meta:
-        model = Address
-        fields = ['id', 'country', 'region', 'city', 'street', 'post_index', 'full_name', 'phone_number']
-        read_only_fields = ['id']
-
-
-class PostAddressSerializer(serializers.ModelSerializer):
-    """Serializer for the PostAddress model."""
-    class Meta:
-        model = PostAddress
-        fields = ['id', 'country', 'post_service', 'city', 'nearest_branch', 'full_name', 'phone_number']
-        read_only_fields = ['id']
-
-
 class UpdateUserSerializers(serializers.ModelSerializer):
     """
     Serializer for retrieving or updating user data.
@@ -121,12 +105,14 @@ class UpdateUserSerializers(serializers.ModelSerializer):
     subscriber = serializers.SerializerMethodField()
     is_premium = serializers.SerializerMethodField()
     is_subscribed = serializers.SerializerMethodField()
+    is_addresses = serializers.SerializerMethodField()
+    is_post_addresses = serializers.SerializerMethodField()
 
     class Meta:
         model = BazhayUser
         fields = ['id', 'photo', 'email', 'first_name', 'last_name', 'username',
                   'birthday', 'view_birthday', 'about_user', 'sex', 'is_guest', 'is_premium', 'is_already_registered',
-                  'is_subscribed', 'subscription', 'subscriber', ]
+                  'is_subscribed', 'subscription', 'subscriber', 'is_addresses', 'is_post_addresses']
 
     def get_subscription(self, obj):
         """
@@ -154,12 +140,26 @@ class UpdateUserSerializers(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         """
         Returns whether the requesting user (from the context) is subscribed to the given user.
-
-        Args:
-            obj (BazhayUser): The user object to check the subscription status for.
+        :args obj (BazhayUser): The user object to check the subscription status for.
         """
         request_user = self.context['request'].user
         return Subscription.is_subscribed(request_user, obj)
+
+    def get_is_addresses(self, obj: BazhayUser) -> int | None:
+        """
+        Returns the ID of the address associated with the given user.
+        :args obj (BazhayUser): The user object to check access to addresses.
+        """
+        address = Address.objects.filter(user=obj).first()
+        return address.id if address else None
+
+    def get_is_post_addresses(self, obj: BazhayUser) -> int | None:
+        """
+        Returns the ID of the post address associated with the given user.
+        :args obj (BazhayUser): The user object to check access to post addresses.
+        """
+        post_address = PostAddress.objects.filter(user=obj).first()
+        return post_address.id if post_address else None
 
 
 class EmailUpdateSerializer(serializers.Serializer):
@@ -435,11 +435,15 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
     subscriber = serializers.SerializerMethodField()
     is_premium = serializers.SerializerMethodField()
+    is_addresses = serializers.SerializerMethodField()
+    is_post_addresses = serializers.SerializerMethodField()
 
     class Meta:
         model = BazhayUser
-        fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber', 'is_premium']
-        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber', 'is_premium']
+        fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber',
+                  'is_premium', 'is_addresses', 'is_post_addresses']
+        read_only_fields = ['id', 'photo', 'username', 'first_name', 'last_name', 'is_subscribed', 'subscriber',
+                            'is_premium', 'is_addresses', 'is_post_addresses']
 
     def get_is_subscribed(self, obj: BazhayUser) -> bool:
         """
@@ -464,3 +468,106 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
 
     def get_is_premium(self, obj: BazhayUser) -> bool:
         return obj.is_premium()
+
+    def get_is_addresses(self, obj: BazhayUser) -> int | None:
+        """
+        Returns the ID of the address associated with the given user.
+        :args obj (BazhayUser): The user object to check access to addresses.
+        """
+        address = Address.objects.filter(user=obj).first()
+        return address.id if address else None
+
+    def get_is_post_addresses(self, obj: BazhayUser) -> int | None:
+        """
+        Returns the ID of the post address associated with the given user.
+        :args obj (BazhayUser): The user object to check access to post addresses.
+        """
+        post_address = PostAddress.objects.filter(user=obj).first()
+        return post_address.id if post_address else None
+
+
+class BaseAccessToAddressSerializer(serializers.ModelSerializer):
+    bazhay_user = ReturnBazhayUserSerializer(read_only=True)
+    asked_bazhay_user = ReturnBazhayUserSerializer(read_only=True)
+
+    class Meta:
+        model = None
+        fields = ['id', 'bazhay_user', 'asked_bazhay_user', 'is_approved']
+        read_only_fields = ['id', 'is_approved']
+
+    def validate(self, data):
+        bazhay_user = self.context['request'].user
+        asked_bazhay_user_id = self.initial_data.get('asked_bazhay_user')
+
+        if not asked_bazhay_user_id:
+            raise serializers.ValidationError("The user ID of the accessed user is not passed.")
+
+        try:
+            asked_bazhay_user = BazhayUser.objects.get(id=asked_bazhay_user_id)
+        except BazhayUser.DoesNotExist:
+            raise serializers.ValidationError(f"The user with id {asked_bazhay_user_id} does not exist.")
+
+        if bazhay_user.id == asked_bazhay_user.id:
+            raise serializers.ValidationError("You cannot send an access request to yourself.")
+
+        data['asked_bazhay_user'] = asked_bazhay_user
+
+        return data
+
+    def create(self, validated_data):
+        bazhay_user = self.context['request'].user
+
+        access_request = self.Meta.model.objects.create(
+            bazhay_user=bazhay_user,
+            asked_bazhay_user=validated_data.get('asked_bazhay_user')
+        )
+
+        return access_request
+
+
+class AccessToAddressSerializer(BaseAccessToAddressSerializer):
+    class Meta(BaseAccessToAddressSerializer.Meta):
+        model = AccessToAddress
+
+
+class AccessToPostAddressSerializer(BaseAccessToAddressSerializer):
+    class Meta(BaseAccessToAddressSerializer.Meta):
+        model = AccessToPostAddress
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    """Serializer for the Address model."""
+    user = ReturnBazhayUserSerializer(read_only=True)
+
+    class Meta:
+        model = Address
+        fields = ['id', 'country', 'region', 'city', 'street', 'post_index', 'full_name', 'phone_number', 'user']
+        read_only_fields = ['id']
+
+    def validate(self, data):
+        request = self.context['request']
+
+        if self.instance is None:
+            if Address.objects.filter(user=request.user).exists():
+                raise serializers.ValidationError(detail="A address for this user already exists.")
+
+        return data
+
+
+class PostAddressSerializer(serializers.ModelSerializer):
+    """Serializer for the PostAddress model."""
+    user = ReturnBazhayUserSerializer(read_only=True)
+
+    class Meta:
+        model = PostAddress
+        fields = ['id', 'country', 'post_service', 'city', 'nearest_branch', 'full_name', 'phone_number', 'user']
+        read_only_fields = ['id']
+
+    def validate(self, data):
+        request = self.context['request']
+
+        if self.instance is None:
+            if PostAddress.objects.filter(user=request.user).exists():
+                raise serializers.ValidationError(detail="A post address for this user already exists.")
+
+        return data
