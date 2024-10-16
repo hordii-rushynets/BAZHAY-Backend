@@ -7,7 +7,7 @@ from rest_framework.request import Request
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
 
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
@@ -378,29 +378,14 @@ class BaseAddressViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'put', 'patch', 'delete']
 
     def get_object(self):
-        queryset = self.get_queryset()
-
-        obj = get_object_or_404(queryset, pk=self.kwargs.get('pk'))
-
-        return obj
+        return get_object_or_404(self.get_queryset(), pk=self.kwargs.get('pk'))
 
     def create_default_address(self):
         """This should be overridden in subclasses for a particular model."""
         raise NotImplementedError('create_default_address method should be implemented in subclasses.')
 
     def retrieve(self, request: Request, *args, **kwargs) -> Response:
-        """
-        Retrieves the first address associated with the authenticated user, or creates a default
-        one if no address exists.
-
-        :returns:  A Response object containing the serialized address data.
-        """
-        address = self.get_queryset().first()
-
-        if not address:
-            address = self.create_default_address()
-
-        serializer = self.get_serializer(address)
+        serializer = self.get_serializer(self.get_object())
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def list(self, request: Request, *args, **kwargs) -> Response:
@@ -452,6 +437,7 @@ class AddressViewSet(BaseAddressViewSet):
             Q(user=user) |
             Q(user__in=allowed_users)
         )
+
 
     def create_default_address(self) -> Address:
         """Creates a default Address instance for the current authenticated user.
