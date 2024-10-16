@@ -402,13 +402,12 @@ class BaseAddressViewSet(viewsets.ModelViewSet):
 
         :returns: A Response object containing serialized address data.
         """
-        queryset = self.get_queryset()
+        address = self.get_queryset().first()
 
-        if not queryset.exists():
-            address = self.create_default_address()
-            queryset = self.queryset.filter(pk=address.pk)
+        if not address:
+            self.create_default_address()
 
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = self.get_serializer(address, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
