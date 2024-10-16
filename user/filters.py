@@ -42,17 +42,17 @@ class BazhayUserFilter(django_filters.FilterSet):
 
 
 class AddressFilter(django_filters.FilterSet):
-    user = django_filters.NumberFilter(field_name="user__id")
+    user_id = django_filters.NumberFilter(field_name='user__id', lookup_expr='exact', label='User ID')
 
     class Meta:
         model = Address
-        fields = ['user']
+        fields = ['user_id']  # You can add more fields here if needed
 
 
 class PostAddressFilter(django_filters.FilterSet):
-    user = django_filters.NumberFilter(field_name="user__id")
+    user_id = django_filters.NumberFilter(field_name='user__id', lookup_expr='exact', label='User ID')
 
     class Meta:
         model = PostAddress
-        fields = ['user']
+        fields = ['user_id']  # You can add more fields here if needed
 

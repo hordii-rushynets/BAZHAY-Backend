@@ -10,7 +10,7 @@ from rest_framework.pagination import PageNumberPagination
 
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
-from django.db.models import Subquery
+from rest_framework.exceptions import PermissionDenied
 
 from .models import BazhayUser, Address, PostAddress, AccessToAddress, AccessToPostAddress
 from .authentication import IgnoreInvalidTokenAuthentication
@@ -375,7 +375,6 @@ class BaseAddressViewSet(viewsets.ModelViewSet):
     """Base viewset for handling address-related operations for authenticated users."""
     permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
     http_method_names = ['get', 'put', 'patch', 'delete']
-    filter_backends = (DjangoFilterBackend,)
 
     def create_default_address(self):
         """This should be overridden in subclasses for a particular model."""
@@ -412,11 +411,28 @@ class BaseAddressViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def update(self, request, *args, **kwargs):
+        """
+        Updates an address only if the authenticated user is the owner of the address.
+        """
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        if instance.user != request.user:
+            raise PermissionDenied("You do not have permission to edit this address.")
+
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class AddressViewSet(BaseAddressViewSet):
     """Viewset for handling CRUD operations related to the Address model."""
     queryset = Address.objects.all()
     serializer_class = AddressSerializer
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = AddressFilter
 
     def get_queryset(self):
@@ -427,10 +443,12 @@ class AddressViewSet(BaseAddressViewSet):
             is_approved=True
         ).values_list('asked_bazhay_user', flat=True)
 
-        return self.queryset.filter(
+        queryset = self.queryset.filter(
             Q(user=user) |
             Q(user__in=allowed_users)
         )
+
+        return AddressFilter(self.request.GET, queryset=queryset).qs
 
     def create_default_address(self) -> Address:
         """Creates a default Address instance for the current authenticated user.
@@ -443,6 +461,7 @@ class PostAddressViewSet(BaseAddressViewSet):
     """Viewset for handling CRUD operations related to the PostAddress model."""
     queryset = PostAddress.objects.all()
     serializer_class = PostAddressSerializer
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = PostAddressFilter
 
     def get_queryset(self):
@@ -453,10 +472,12 @@ class PostAddressViewSet(BaseAddressViewSet):
             is_approved=True
         ).values_list('asked_bazhay_user', flat=True)
 
-        return self.queryset.filter(
+        queryset = self.queryset.filter(
             Q(user=user) |
             Q(user__in=allowed_users)
         )
+
+        return PostAddressFilter(self.request.GET, queryset=queryset).qs
 
     def create_default_address(self) -> PostAddress:
         """
@@ -486,7 +507,7 @@ class BaseGetAccessRequestViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
         try:
             access_request = self.get_object()
 
-            if access_request.bazhay_user != request.user:
+            if access_request.asked_bazhay_user != request.user:
                 return Response({"detail": "You cannot confirm this request."}, status=status.HTTP_403_FORBIDDEN)
 
             access_request.is_approved = True
@@ -502,7 +523,7 @@ class BaseGetAccessRequestViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
         try:
             access_request = self.get_object()
 
-            if access_request.bazhay_user != request.user:
+            if access_request.asked_bazhay_user != request.user:
                 return Response({"detail": "You cannot confirm this request."}, status=status.HTTP_403_FORBIDDEN)
 
             access_request.is_not_approved = True

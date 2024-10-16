@@ -152,7 +152,7 @@ def send_notification(instance, recipient_id, message_uk, message_en, buttons):
         button=buttons
     )
     notification.save()
-    notification.users.set([instance.reservation.wish.author])
+    notification.users.set([instance.bazhay_user])
 
 
 def handle_access_request(instance, created, message_uk_template, message_en_template, approval_url):

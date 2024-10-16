@@ -90,22 +90,6 @@ class ConfirmCodeSerializer(serializers.Serializer):
         return data
 
 
-class AddressSerializer(serializers.ModelSerializer):
-    """Serializer for the Address model."""
-    class Meta:
-        model = Address
-        fields = ['id', 'country', 'region', 'city', 'street', 'post_index', 'full_name', 'phone_number']
-        read_only_fields = ['id']
-
-
-class PostAddressSerializer(serializers.ModelSerializer):
-    """Serializer for the PostAddress model."""
-    class Meta:
-        model = PostAddress
-        fields = ['id', 'country', 'post_service', 'city', 'nearest_branch', 'full_name', 'phone_number']
-        read_only_fields = ['id']
-
-
 class UpdateUserSerializers(serializers.ModelSerializer):
     """
     Serializer for retrieving or updating user data.
@@ -504,6 +488,7 @@ class ReturnBazhayUserSerializer(serializers.ModelSerializer):
 
 class BaseAccessToAddressSerializer(serializers.ModelSerializer):
     bazhay_user = ReturnBazhayUserSerializer(read_only=True)
+    asked_bazhay_user = ReturnBazhayUserSerializer(read_only=True)
 
     class Meta:
         model = None
@@ -511,6 +496,7 @@ class BaseAccessToAddressSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'is_approved']
 
     def validate(self, data):
+        bazhay_user = self.context['request'].user
         asked_bazhay_user_id = self.initial_data.get('asked_bazhay_user')
 
         if not asked_bazhay_user_id:
@@ -520,6 +506,9 @@ class BaseAccessToAddressSerializer(serializers.ModelSerializer):
             asked_bazhay_user = BazhayUser.objects.get(id=asked_bazhay_user_id)
         except BazhayUser.DoesNotExist:
             raise serializers.ValidationError(f"The user with id {asked_bazhay_user_id} does not exist.")
+
+        if bazhay_user.id == asked_bazhay_user.id:
+            raise serializers.ValidationError("You cannot send an access request to yourself.")
 
         data['asked_bazhay_user'] = asked_bazhay_user
 
@@ -544,3 +533,33 @@ class AccessToAddressSerializer(BaseAccessToAddressSerializer):
 class AccessToPostAddressSerializer(BaseAccessToAddressSerializer):
     class Meta(BaseAccessToAddressSerializer.Meta):
         model = AccessToPostAddress
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    """Serializer for the Address model."""
+    user = ReturnBazhayUserSerializer(read_only=True)
+
+    class Meta:
+        model = Address
+        fields = ['id', 'country', 'region', 'city', 'street', 'post_index', 'full_name', 'phone_number', 'user']
+        read_only_fields = ['id']
+
+    def validate(self, data):
+        if Address.objects.filter(user=self.context['request'].user).exists():
+            raise serializers.ValidationError("An address for this user already exists. You cannot create another one.")
+        return data
+
+
+class PostAddressSerializer(serializers.ModelSerializer):
+    """Serializer for the PostAddress model."""
+    user = ReturnBazhayUserSerializer(read_only=True)
+
+    class Meta:
+        model = PostAddress
+        fields = ['id', 'country', 'post_service', 'city', 'nearest_branch', 'full_name', 'phone_number', 'user']
+        read_only_fields = ['id']
+
+    def validate(self, data):
+        if PostAddress.objects.filter(user=self.context['request'].user).exists():
+            raise serializers.ValidationError("A post address for this user already exists. You cannot create another one.")
+        return data
