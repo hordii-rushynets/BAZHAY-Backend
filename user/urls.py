@@ -14,7 +14,8 @@ from .views import (AuthViewSet,
                     CreateAccessRequestViewSet,
                     GetAccessRequestViewSet,
                     CreatePostAddressAccessRequestViewSet,
-                    GetPostAddressAccessRequestViewSet)
+                    GetPostAddressAccessRequestViewSet,
+                    AppleLoginView)
 
 router = DefaultRouter()
 router.register(r'auth', AuthViewSet, basename='auth')
@@ -34,4 +35,5 @@ urlpatterns = router.urls + [
     path('logout/', TokenBlacklistView.as_view(), name='logout'),
     path('user/photo/', UpdateUserPhotoViewSet.as_view({'put': 'update'})),
     path('auth/google/', GoogleLoginView.as_view({"post": "create"}), name='google_auth'),
+    path('auth/apple/', AppleLoginView.as_view(), name='apple-login'),
 ]

@@ -7,7 +7,8 @@ from rest_framework.request import Request
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.views import APIView
 
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
@@ -28,7 +29,8 @@ from .serializers import (CreateUserSerializer,
                           AddressSerializer,
                           PostAddressSerializer,
                           AccessToAddressSerializer,
-                          AccessToPostAddressSerializer)
+                          AccessToPostAddressSerializer,
+                          AppleAuthSerializer)
 
 from .utils import save_and_send_confirmation_code
 from .filters import BazhayUserFilter
@@ -544,3 +546,19 @@ class GetPostAddressAccessRequestViewSet(BaseGetAccessRequestViewSet):
     serializer_class = AccessToPostAddressSerializer
     model = AccessToPostAddress
 
+
+class AppleLoginView(APIView):
+    """View to auth with apple"""
+    def post(self, request):
+        serializer = AppleAuthSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data.get('user')
+            if user is None:
+                user = serializer.save()
+
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

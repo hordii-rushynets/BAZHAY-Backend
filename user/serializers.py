@@ -1,5 +1,9 @@
 from django.core.cache import cache
+from django.conf import settings
+
 from rest_framework import serializers
+import jwt
+
 
 from .models import BazhayUser, Address, PostAddress, AccessToAddress, AccessToPostAddress
 
@@ -571,3 +575,62 @@ class PostAddressSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(detail="A post address for this user already exists.")
 
         return data
+
+
+class AppleAuthSerializer(serializers.Serializer):
+    """Serializer to auth with apple"""
+
+    id_token = serializers.CharField()
+    authorization_code = serializers.CharField(required=False)
+
+    def validate(self, data):
+        """
+        Validate id token
+        """
+        id_token = data.get('id_token')
+
+        apple_keys_url = 'https://appleid.apple.com/auth/keys'
+        apple_keys = requests.get(apple_keys_url).json()
+
+        try:
+            header = jwt.get_unverified_header(id_token)
+        except jwt.DecodeError:
+            raise serializers.ValidationError(detail="Invalid token format")
+
+        key = next((k for k in apple_keys['keys'] if k['kid'] == header['kid']), None)
+        if key is None:
+            raise serializers.ValidationError(detail="Invalid signature key")
+
+        try:
+            public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key)
+            decoded_token = jwt.decode(id_token, public_key, algorithms=['RS256'], audience=settings.APPLE_CLIENT_ID)
+        except jwt.ExpiredSignatureError:
+            raise serializers.ValidationError(detail="The token has expired")
+        except jwt.InvalidTokenError:
+            raise serializers.ValidationError(detail="Invalid token")
+
+        email = decoded_token.get('email', None)
+        first_name = decoded_token.get('given_name', '')
+        last_name = decoded_token.get('family_name', '')
+
+        user = BazhayUser.objects.filter(email=email).first()
+
+        if user is None:
+            data['email'] = email
+            data['first_name'] = first_name
+            data['last_name'] = last_name
+            data['username'] = email
+
+        data['user'] = user
+        return data
+
+    def create(self, validated_data):
+        user, created = BazhayUser.objects.get_or_create(
+            email=validated_data.get('email', ''),
+            defaults={
+                'username': validated_data.get('email', ''),
+                'first_name': validated_data.get('first_name', ''),
+                'last_name': validated_data.get('last_name', ''),
+            }
+        )
+        return user
