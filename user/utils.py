@@ -1,5 +1,6 @@
 from django.core.cache import cache
 from .tasks import send_email
+from django.conf import settings
 
 import random
 import string
@@ -14,6 +15,6 @@ def save_and_send_confirmation_code(email: str) -> None:
     """Save in storage and send confirmation code"""
     confirmation_code = generate_confirmation_code()
     cache_key = f"code_{email}"
-    cache.set(cache_key, confirmation_code, timeout=3600)
+    cache.set(cache_key, confirmation_code, timeout=settings.TIME_LIFE_OTP_CODE)
 
     send_email.delay(email, confirmation_code)
