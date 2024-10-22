@@ -1,6 +1,5 @@
 from django.db import models
 
-from ability.models import Wish
 from common.models import Slug
 
 
@@ -9,8 +8,9 @@ class Brand(Slug):
     name = models.CharField(max_length=128)
     nickname = models.CharField(max_length=128, unique=True, null=True, blank=True)
     description = models.TextField()
-    photo = models.ImageField()
-    wish = models.ManyToManyField(Wish, related_name='brand')
+    photo = models.ImageField(upload_to='brand_photos/')
+    views_number = models.PositiveIntegerField(blank=True, null=True, default=0)
+    cover_photo = models.ImageField(upload_to='brand_photos/', blank=True, null=True,)
 
     def __str__(self) -> str:
         return str(self.nickname)

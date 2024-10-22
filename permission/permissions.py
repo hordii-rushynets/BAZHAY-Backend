@@ -26,3 +26,31 @@ class IsRegisteredUserOrReadOnly(BasePermission):
             return True
 
         return False
+
+
+class IsOwner(BasePermission):
+    """
+    Allows access only to the author (owner) of the record.
+    """
+    def has_object_permission(self, request, view, obj):
+        return obj.user == request.user
+
+
+class IsPremium(BasePermission):
+    """
+    Access only for premium users.
+    """
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_premium()
+
+
+class IsAuthorOrReadOnly(BasePermission):
+    """
+    Custom permission to allow only the author of an object to modify it,
+    while others can only read it (if they have access).
+    """
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return True
+        return obj.user == request.user

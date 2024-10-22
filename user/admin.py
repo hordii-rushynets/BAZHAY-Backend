@@ -1,10 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import BazhayUser
+from .models import BazhayUser, Address, PostAddress, AccessToAddress, AccessToPostAddress
 
 
 class BazhayUserAdmin(UserAdmin):
-    """Bazhay User Admin"""
+    """
+    Custom admin interface for the BazhayUser model.
+    """
     model = BazhayUser
     list_display = ('email', 'username', 'first_name', 'last_name')
     search_fields = ('email', 'username', 'first_name', 'last_name')
@@ -12,4 +14,9 @@ class BazhayUserAdmin(UserAdmin):
     ordering = ('email',)
 
 
+# Register the custom admin interface with the Django admin site
 admin.site.register(BazhayUser, BazhayUserAdmin)
+admin.site.register(Address)
+admin.site.register(PostAddress)
+admin.site.register(AccessToAddress)
+admin.site.register(AccessToPostAddress)

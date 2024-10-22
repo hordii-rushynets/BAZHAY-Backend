@@ -28,7 +28,12 @@ urlpatterns = [
     path('api/wish/', include('ability.urls')),
     path('api/news/', include('news.urls')),
     path('api/premium/', include('premium.urls')),
+    path('api/notifications/', include('notifications.urls')),
+    path('api/support/', include('technical_support.urls'))
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += list(
+        static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) +
+        static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    )
