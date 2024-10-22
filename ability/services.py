@@ -107,3 +107,18 @@ class PopularRequestService:
 
         return sorted(similar_queries, key=lambda x: Levenshtein.distance(query, x['query']))
 
+
+class ValidateServices:
+    def __init__(self):
+        self.api_secret = settings.VALIDATE_API_SECRET
+        self.api_user = settings.VALIDATE_API_USER
+
+    def photo(self):
+        pass
+
+    def text(self):
+        pass
+
+    def video(self):
+        pass
+
