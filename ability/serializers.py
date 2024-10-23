@@ -47,14 +47,9 @@ class WishSerializer(serializers.ModelSerializer):
         Checks if the user has a premium subscription and enforces limits on the number
         of wishes or access type changes based on the subscription status.
 
-        Args:
-            data (dict): The data to be validated.
-
-        Returns:
-            dict: The validated data.
-
-        Raises:
-            ValidationError: If validation checks fail.
+        :argsdata (dict): The data to be validated.
+        :returns dict: The validated data.
+        :raises ValidationError: If validation checks fail.
         """
         user = self.context['request'].user
         is_premium = hasattr(user, 'premium') and user.premium.is_active
@@ -157,18 +152,12 @@ class VideoSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         """
         Validate the provided data.
-
         Checks that the end time is greater than the start time and that the user
         has permission to modify the video associated with the wish.
 
-        Args:
-            attrs (dict): The data to be validated.
-
-        Returns:
-            dict: The validated data.
-
-        Raises:
-            serializers.ValidationError: If the end time is less than or equal to the start time,
+        :args attrs (dict): The data to be validated.
+        :returns dict: The validated data.
+        :raises serializers.ValidationError: If the end time is less than or equal to the start time,
                                           or if the user does not have permission to modify the wish.
         """
         if attrs['end'] <= attrs['start']:
@@ -178,6 +167,8 @@ class VideoSerializer(serializers.ModelSerializer):
 
         if self.instance and self.instance.author != user:
             raise serializers.ValidationError("You do not have permission to modify this wish.")
+
+
 
         return attrs
 

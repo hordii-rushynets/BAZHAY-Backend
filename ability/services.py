@@ -110,6 +110,7 @@ class PopularRequestService:
 
 
 class ValidateServices:
+    """Checks photos, videos, text for approvals"""
     def __init__(self):
         self.api_secret = settings.VALIDATE_API_SECRET
         self.api_user = settings.VALIDATE_API_USER
@@ -120,35 +121,46 @@ class ValidateServices:
             'api_user': self.api_user,
             'api_secret': self.api_user}
 
-    def photo(self, file: str):
+    def photo(self, file: str) -> bool:
+        """
+        Sends the photo for verification and returns the result.
+        :param file: path to file.
+        """
         files = {'media': open(file, 'rb')}
         response = requests.post('https://api.sightengine.com/1.0/check.json', files=files, data=self.params)
 
         output = json.loads(response.text)
         return self.__check_threshold(output)
 
-    def video(self, file: str):
+    def video(self, file: str) -> bool:
+        """
+        Sends the video for verification and returns the result.
+        :param file: path to file.
+        """
         files = {'media': open(file, 'rb')}
         response = requests.post('https://api.sightengine.com/1.0/video/check-sync.json', files=files, data=self.params)
 
         output = json.loads(response.text)
-        print(output)
         return self.__check_threshold(output)
 
-    def text(self):
-        pass
+    def text(self, text: str) -> bool:
+        raise NotImplementedError
 
-    def __check_threshold(self, data, threshold=0.5):
-        if isinstance(data, dict):
-            for key, value in data.items():
+    def __check_threshold(self, check_info: dict, threshold: int = 0.5) -> bool:
+        """
+        Checks if at least one value is not greater than threshold.
+        :param check_info:
+        """
+        if isinstance(check_info, dict):
+            for key, value in check_info.items():
                 if key in self.ignore_key:
                     continue
                 if self.__check_threshold(value, threshold) is False:
                     return False
-        elif isinstance(data, list):
-            for item in data:
+        elif isinstance(check_info, list):
+            for item in check_info:
                 if self.__check_threshold(item, threshold) is False:
                     return False
-        elif isinstance(data, (int, float)) and data > threshold:
+        elif isinstance(check_info, (int, float)) and check_info > threshold:
             return False
         return True
