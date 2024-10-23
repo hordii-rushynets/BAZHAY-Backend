@@ -4,6 +4,7 @@ from backend import settings
 import redis
 import Levenshtein
 from datetime import timedelta
+import json
 
 
 class CurrencyService:
@@ -112,13 +113,42 @@ class ValidateServices:
     def __init__(self):
         self.api_secret = settings.VALIDATE_API_SECRET
         self.api_user = settings.VALIDATE_API_USER
+        self.ignore_key = ['context', 'suggestive_classes', 'none', 'timestamp', 'indoor_other', 'operations',
+                           'bikini', 'mildly_suggestive', 'position']
+        self.params = {
+            'models': settings.VALIDATE_MODEL,
+            'api_user': self.api_user,
+            'api_secret': self.api_user}
 
-    def photo(self):
-        pass
+    def photo(self, file: str):
+        files = {'media': open(file, 'rb')}
+        response = requests.post('https://api.sightengine.com/1.0/check.json', files=files, data=self.params)
+
+        output = json.loads(response.text)
+        return self.__check_threshold(output)
+
+    def video(self, file: str):
+        files = {'media': open(file, 'rb')}
+        response = requests.post('https://api.sightengine.com/1.0/video/check-sync.json', files=files, data=self.params)
+
+        output = json.loads(response.text)
+        print(output)
+        return self.__check_threshold(output)
 
     def text(self):
         pass
 
-    def video(self):
-        pass
-
+    def __check_threshold(self, data, threshold=0.5):
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if key in self.ignore_key:
+                    continue
+                if self.__check_threshold(value, threshold) is False:
+                    return False
+        elif isinstance(data, list):
+            for item in data:
+                if self.__check_threshold(item, threshold) is False:
+                    return False
+        elif isinstance(data, (int, float)) and data > threshold:
+            return False
+        return True
