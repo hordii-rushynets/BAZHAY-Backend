@@ -1,68 +1,58 @@
-from rest_framework import serializers
-from django.utils import timezone
+import requests
 
-from user.serializers import ReturnBazhayUserSerializer
+from rest_framework import serializers
+from datetime import datetime
 
 from .models import Premium
 
+from google.oauth2 import service_account
+from google.auth.transport.requests import Request
 
-class PremiumSerializers(serializers.ModelSerializer):
-    is_active = serializers.SerializerMethodField()
-    code = serializers.CharField(write_only=True)
+
+class GoogleValidateSerializer(serializers.ModelSerializer):
+    package_name = serializers.CharField()
+    product_id = serializers.CharField()
+    purchase_token = serializers.CharField()
 
     class Meta:
         model = Premium
-        fields = ['id', 'date_of_payment', 'is_active', 'is_an_annual_payment', 'expiration_date', 'code', 'is_trial_period']
-        read_only_fields = ['id', 'date_of_payment', 'is_active', 'expiration_date']
-
-    def get_is_active(self, obj):
-        return obj.is_active
-
-    def validate_code(self, value):
-        # Code validation logic will be added later
-        return value
-
-    def validate(self, attrs):
-        instance = self.context.get('instance')
-
-        if instance and instance.is_active:
-            raise serializers.ValidationError('Subscription has expired')
-        return attrs
+        fields = ['id', 'end_date', 'is_used_trial', 'is_an_annual_payment', 'is_trial_period']
+        read_only_fields = ['id', 'end_date']
 
     def create(self, validated_data):
-        bazhay_user = self.context['request'].user
-        is_an_annual_payment = validated_data.get('is_an_annual_payment', False)
+        user = self.context['request'].user
 
-        instance, created = Premium.objects.get_or_create(
-            bazhay_user=bazhay_user,
-            defaults={
-                'date_of_payment': timezone.now(),
-                'is_an_annual_payment': is_an_annual_payment,
-                'is_used_trial': True,
-            }
+        SERVICE_ACCOUNT_FILE = 'meta-tracker-304410-8b1ff946e12e.json'
+
+        credentials = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE,
+            scopes=['https://www.googleapis.com/auth/androidpublisher']
         )
 
-        if not created:
-            instance.date_of_payment = timezone.now()
-            instance.is_an_annual_payment = is_an_annual_payment
-            instance.save()
+        credentials.refresh(Request())
 
-        return instance
+        PACKAGE_NAME = validated_data.get('package_name')
+        PRODUCT_ID = validated_data.get('product_id')
+        PURCHASE_TOKEN = validated_data.get('purchase_token')
 
+        headers = {'Authorization': f'Bearer {credentials.token}'}
+        url = f'https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{PACKAGE_NAME}/purchases/subscriptions/{PRODUCT_ID}/tokens/{PURCHASE_TOKEN}'
 
-class TrialSubscriptionSerializer(serializers.Serializer):
-    def create(self, validated_data):
-        bazhay_user = self.context['request'].user
+        response = requests.get(url, headers=headers)
 
-        instance, created = Premium.objects.get_or_create(
-            bazhay_user=bazhay_user,
-            defaults={
-                'date_of_payment': timezone.now(),
-                'is_used_trial': False,
-                'is_trial_period': True,
-            }
-        )
+        if response.status_code == 200:
+            premium = Premium.objects.get_or_create(bazhay_user=user)
+            purchase_data = response.json()
+            match purchase_data.get('paymentState'):
+                case 0:
+                    serializers.ValidationError(detail='Purchase is invalid.')
+                case 1:
+                    seconds = purchase_data.get('expiryTimeMillis') / 1000.
+                    premium.end_date = datetime.fromtimestamp(seconds)
+                    premium.save()
+                case 2:
+                    seconds = purchase_data.get('expiryTimeMillis') / 1000.
+                    premium.end_date = datetime.fromtimestamp(seconds)
+        else:
+            serializers.ValidationError(detail="Google service error.")
 
-        if not created:
-            raise serializers.ValidationError()
-        return instance

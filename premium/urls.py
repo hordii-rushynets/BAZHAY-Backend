@@ -1,12 +1,10 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import PremiumViewSet, TrialPremiumViewSet, AppleValidationViewSet
+from .views import AppleValidationViewSet, GoogleValidationViewSet
 
 router = DefaultRouter()
 router.register('apple-validation', AppleValidationViewSet, basename='apple_validation')
+router.register('google-validation', GoogleValidationViewSet, basename='google_validation')
 
-urlpatterns = router.urls + [
-    path('create/', PremiumViewSet.as_view({'post': 'create', 'get': 'list'})),
-    path('try/', TrialPremiumViewSet.as_view({'post': 'create'})),
-]
+urlpatterns = router.urls
