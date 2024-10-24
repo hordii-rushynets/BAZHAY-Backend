@@ -9,6 +9,9 @@ from user.serializers import ReturnBazhayUserSerializer, BazhayUser
 from brand.serializers import BrandSerializer
 from moviepy.editor import VideoFileClip
 from news.serializers import NewsSerializers
+from .services import ValidateServices
+
+validation_service = ValidateServices()
 
 
 class WishSerializer(serializers.ModelSerializer):
@@ -47,14 +50,9 @@ class WishSerializer(serializers.ModelSerializer):
         Checks if the user has a premium subscription and enforces limits on the number
         of wishes or access type changes based on the subscription status.
 
-        Args:
-            data (dict): The data to be validated.
-
-        Returns:
-            dict: The validated data.
-
-        Raises:
-            ValidationError: If validation checks fail.
+        :argsdata (dict): The data to be validated.
+        :returns dict: The validated data.
+        :raises ValidationError: If validation checks fail.
         """
         user = self.context['request'].user
         is_premium = hasattr(user, 'premium') and user.premium.is_active
@@ -66,6 +64,21 @@ class WishSerializer(serializers.ModelSerializer):
         if not is_premium and 'access_type' in data and data['access_type'] != 'everyone':
             raise ValidationError(
                 "You cannot change the access type to a non-default value without a premium subscription.")
+
+        video = data.get('video')
+        photo = data.get('photo')
+
+        if video:
+            is_valid_video = validation_service.video(file=video)
+
+            if not is_valid_video:
+                raise serializers.ValidationError(detail="Video content is not allowed.")
+
+        if photo:
+            is_valid_photo = validation_service.photo(file=photo)
+
+            if not is_valid_photo:
+                raise serializers.ValidationError(detail="Photo content is not allowed.")
 
         return data
 
@@ -157,18 +170,12 @@ class VideoSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         """
         Validate the provided data.
-
         Checks that the end time is greater than the start time and that the user
         has permission to modify the video associated with the wish.
 
-        Args:
-            attrs (dict): The data to be validated.
-
-        Returns:
-            dict: The validated data.
-
-        Raises:
-            serializers.ValidationError: If the end time is less than or equal to the start time,
+        :args attrs (dict): The data to be validated.
+        :returns dict: The validated data.
+        :raises serializers.ValidationError: If the end time is less than or equal to the start time,
                                           or if the user does not have permission to modify the wish.
         """
         if attrs['end'] <= attrs['start']:
@@ -179,7 +186,15 @@ class VideoSerializer(serializers.ModelSerializer):
         if self.instance and self.instance.author != user:
             raise serializers.ValidationError("You do not have permission to modify this wish.")
 
+        file = attrs['video']
+
+        is_valid = validation_service.video(file=file)
+
+        if not is_valid:
+            raise serializers.ValidationError("Video content is not allowed.")
+
         return attrs
+
 
     def update(self, instance, validated_data):
         """

@@ -273,3 +273,10 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+
+TIME_LIFE_OTP_CODE = int(os.getenv('TIME_LIFE_OTP_CODE'))
+
+VALIDATE_API_USER = os.getenv('VALIDATE_API_USER')
+VALIDATE_API_SECRET = os.getenv('VALIDATE_API_SECRET')
+VALIDATE_MODEL = 'nudity-2.1,weapon,recreational_drug,medical,gore-2.0,offensive,self-harm,violence'

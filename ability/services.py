@@ -4,6 +4,7 @@ from backend import settings
 import redis
 import Levenshtein
 from datetime import timedelta
+import json
 
 
 class CurrencyService:
@@ -107,3 +108,57 @@ class PopularRequestService:
 
         return sorted(similar_queries, key=lambda x: Levenshtein.distance(query, x['query']))
 
+
+class ValidateServices:
+    """Checks photos, videos, text for approvals"""
+    def __init__(self):
+        self.ignore_key = ['context', 'suggestive_classes', 'none', 'timestamp', 'indoor_other', 'operations',
+                           'bikini', 'mildly_suggestive', 'position']
+        self.params = {
+            'models': settings.VALIDATE_MODEL,
+            'api_user': settings.VALIDATE_API_USER,
+            'api_secret': settings.VALIDATE_API_SECRET}
+
+    def photo(self, file: str) -> bool:
+        """
+        Sends the photo for verification and returns the result.
+        If content is allowed return True, otherwise False.
+        :param file: path to file.
+        """
+        photo = {'media': file}
+        response = requests.post('https://api.sightengine.com/1.0/check.json', files=photo, data=self.params)
+
+        output = json.loads(response.text)
+        return self.__check_threshold(output)
+
+    def video(self, file: str) -> bool:
+        """
+        Sends the video for verification and returns the result.
+        If content is allowed return True, otherwise False.
+        :param file: path to file.
+        """
+        video = {'media': file}
+        response = requests.post('https://api.sightengine.com/1.0/video/check-sync.json', files=video, data=self.params)
+
+        output = json.loads(response.text)
+        print(self.__check_threshold(output))
+        return self.__check_threshold(output)
+
+    def __check_threshold(self, check_info: dict, threshold: int = 0.5) -> bool:
+        """
+        Checks if at least one value is not greater than threshold.
+        :param check_info:
+        """
+        if isinstance(check_info, dict):
+            for key, value in check_info.items():
+                if key in self.ignore_key:
+                    continue
+                if self.__check_threshold(value, threshold) is False:
+                    return False
+        elif isinstance(check_info, list):
+            for item in check_info:
+                if self.__check_threshold(item, threshold) is False:
+                    return False
+        elif isinstance(check_info, (int, float)) and check_info > threshold:
+            return False
+        return True
