@@ -126,7 +126,7 @@ class ValidateServices:
         :param file: path to file.
         """
         photo = {'media': file}
-        response = requests.post('https://api.sightengine.com/1.0/video/check-sync.json', files=photo, data=self.params)
+        response = requests.post('https://api.sightengine.com/1.0/check.json', files=photo, data=self.params)
 
         output = json.loads(response.text)
         return self.__check_threshold(output)

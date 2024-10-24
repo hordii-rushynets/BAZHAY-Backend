@@ -188,8 +188,6 @@ class VideoSerializer(serializers.ModelSerializer):
 
         file = attrs['video']
 
-        validation_service = ValidateServices()
-
         is_valid = validation_service.video(file=file)
 
         if not is_valid:
