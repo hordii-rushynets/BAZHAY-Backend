@@ -15,6 +15,7 @@ from datetime import timedelta
 import os
 from enum import IntEnum
 from corsheaders.defaults import default_headers
+from appstoreserverlibrary.models.Environment import Environment
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -273,3 +274,9 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+APPLE_KEY_ID = os.getenv("APPLE_KEY_ID")
+APPLE_ISSUER_ID = os.getenv("APPLE_ISSUER_ID")
+APPLE_BUNDLE_ID = os.getenv("APPLE_BUNDLE_ID")
+APPLE_ENVIRONMENT = Environment.SANDBOX
+
