@@ -9,6 +9,9 @@ from user.serializers import ReturnBazhayUserSerializer, BazhayUser
 from brand.serializers import BrandSerializer
 from moviepy.editor import VideoFileClip
 from news.serializers import NewsSerializers
+from .services import ValidateServices
+
+validation_service = ValidateServices()
 
 
 class WishSerializer(serializers.ModelSerializer):
@@ -61,6 +64,21 @@ class WishSerializer(serializers.ModelSerializer):
         if not is_premium and 'access_type' in data and data['access_type'] != 'everyone':
             raise ValidationError(
                 "You cannot change the access type to a non-default value without a premium subscription.")
+
+        video = data.get('video')
+        photo = data.get('photo')
+
+        if video:
+            is_valid_video = validation_service.video(file=video)
+
+            if not is_valid_video:
+                raise serializers.ValidationError(detail="Video content is not allowed.")
+
+        if photo:
+            is_valid_photo = validation_service.photo(file=photo)
+
+            if not is_valid_photo:
+                raise serializers.ValidationError(detail="Photo content is not allowed.")
 
         return data
 
@@ -168,9 +186,17 @@ class VideoSerializer(serializers.ModelSerializer):
         if self.instance and self.instance.author != user:
             raise serializers.ValidationError("You do not have permission to modify this wish.")
 
+        file = attrs['video']
 
+        validation_service = ValidateServices()
+
+        is_valid = validation_service.video(file=file)
+
+        if not is_valid:
+            raise serializers.ValidationError("Video content is not allowed.")
 
         return attrs
+
 
     def update(self, instance, validated_data):
         """

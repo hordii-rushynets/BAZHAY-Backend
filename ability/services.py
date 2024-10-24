@@ -112,22 +112,21 @@ class PopularRequestService:
 class ValidateServices:
     """Checks photos, videos, text for approvals"""
     def __init__(self):
-        self.api_secret = settings.VALIDATE_API_SECRET
-        self.api_user = settings.VALIDATE_API_USER
         self.ignore_key = ['context', 'suggestive_classes', 'none', 'timestamp', 'indoor_other', 'operations',
                            'bikini', 'mildly_suggestive', 'position']
         self.params = {
             'models': settings.VALIDATE_MODEL,
-            'api_user': self.api_user,
-            'api_secret': self.api_user}
+            'api_user': settings.VALIDATE_API_USER,
+            'api_secret': settings.VALIDATE_API_SECRET}
 
     def photo(self, file: str) -> bool:
         """
         Sends the photo for verification and returns the result.
+        If content is allowed return True, otherwise False.
         :param file: path to file.
         """
-        files = {'media': open(file, 'rb')}
-        response = requests.post('https://api.sightengine.com/1.0/check.json', files=files, data=self.params)
+        photo = {'media': file}
+        response = requests.post('https://api.sightengine.com/1.0/video/check-sync.json', files=photo, data=self.params)
 
         output = json.loads(response.text)
         return self.__check_threshold(output)
@@ -135,16 +134,15 @@ class ValidateServices:
     def video(self, file: str) -> bool:
         """
         Sends the video for verification and returns the result.
+        If content is allowed return True, otherwise False.
         :param file: path to file.
         """
-        files = {'media': open(file, 'rb')}
-        response = requests.post('https://api.sightengine.com/1.0/video/check-sync.json', files=files, data=self.params)
+        video = {'media': file}
+        response = requests.post('https://api.sightengine.com/1.0/video/check-sync.json', files=video, data=self.params)
 
         output = json.loads(response.text)
+        print(self.__check_threshold(output))
         return self.__check_threshold(output)
-
-    def text(self, text: str) -> bool:
-        raise NotImplementedError
 
     def __check_threshold(self, check_info: dict, threshold: int = 0.5) -> bool:
         """
